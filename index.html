@@ -753,10 +753,75 @@ async function carregarTodasDespesas(){
 }
 
 // Baixa as imagens em BACKGROUND, depois do app já estar visível
+// Limpeza única (por conta) de comprovantes duplicados no Drive — resultado de um
+// bug já corrigido em que a correção de orientação e o salvamento automático do app
+// podiam rodar ao mesmo tempo e gerar dois arquivos com o mesmo nome na mesma pasta.
+// Mantém sempre a versão modificada mais recentemente (a já corrigida) e remove as outras.
+async function limparComprovantesDuplicados(){
+  const pastasJaVerificadas = new Set();
+
+  for(const ev of S.eventos){
+    const fid = await getEventoFolderId(ev.id);
+    if(!fid || pastasJaVerificadas.has(fid)) continue;
+    pastasJaVerificadas.add(fid);
+
+    // Lista todos os arquivos de imagem dentro da pasta do evento
+    const q = `'${fid}' in parents and trashed=false and mimeType contains 'image/'`;
+    const r = await driveReq('GET',
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,modifiedTime)&pageSize=1000`);
+    const arquivos = r.files || [];
+    if(!arquivos.length) continue;
+
+    // Agrupa por nome
+    const porNome = {};
+    for(const f of arquivos){
+      if(!porNome[f.name]) porNome[f.name] = [];
+      porNome[f.name].push(f);
+    }
+
+    for(const nome in porNome){
+      const grupo = porNome[nome];
+      if(grupo.length < 2) continue; // sem duplicata
+
+      // Ordena pelo mais recente primeiro — esse é o que vamos manter
+      grupo.sort((a,b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
+      const manter = grupo[0];
+      const remover = grupo.slice(1);
+
+      // Corrige qualquer despesa cujo driveId apontava para um arquivo que será removido
+      for(const d of S.despesas){
+        if(d.eventoId !== ev.id || !d.attachs) continue;
+        for(const a of d.attachs){
+          if(remover.some(r => r.id === a.driveId)){
+            a.driveId = manter.id;
+            a.data = null; // força rebaixar do arquivo correto na próxima passada
+          }
+        }
+      }
+
+      // Remove os arquivos duplicados do Drive
+      for(const f of remover){
+        try{
+          await driveReq('DELETE', `https://www.googleapis.com/drive/v3/files/${f.id}`);
+        }catch(e){
+          console.warn('Falha ao remover duplicata no Drive:', f.name, e);
+        }
+      }
+    }
+  }
+}
+
 async function restaurarImagensBackground(){
   let alguemAtualizado = false;
   // Nova versão da flag (v2) — força reprocessar mesmo quem já tinha rodado a v1 com bug
   const jaCorrigiuOrientacao = localStorage.getItem('nd_fix_orientation_v2') === '1';
+  // Flag separada para a limpeza de duplicatas geradas pelo bug de upload duplicado
+  const jaLimpouDuplicatas = localStorage.getItem('nd_dedup_v1') === '1';
+
+  if(!jaLimpouDuplicatas){
+    try{ await limparComprovantesDuplicados(); }catch(e){ console.warn('Falha ao limpar duplicatas:', e); }
+    localStorage.setItem('nd_dedup_v1','1');
+  }
 
   for(const d of S.despesas){
     if(!d.attachs || !d.attachs.length) continue;
@@ -808,6 +873,7 @@ async function restaurarImagensBackground(){
   if(alguemAtualizado){
     const despesasEl = document.getElementById('screen-despesas');
     if(despesasEl && despesasEl.classList.contains('active')) renderDespesas();
+
   }
 }
 
@@ -891,8 +957,15 @@ async function processarComprovantes(despesas, eventoFolderId){
   for(const d of despesas){
     const dCopy = {...d, attachs:[]};
     for(const a of (d.attachs||[])){
+      // Já tem driveId — já está salvo no Drive. NUNCA fazer upload de novo aqui,
+      // mesmo que "data" esteja preenchido (isso só é cache local para exibir/gerar PDF).
+      // Fazer upload de novo nesse caso é o que causava arquivos duplicados no Drive.
+      if(a.driveId){
+        dCopy.attachs.push({name:a.name, type:a.type, driveId:a.driveId, driveLink:a.driveLink||null, data:null});
+        continue;
+      }
       if(a.data && a.data.startsWith('data:')){
-        // Upload da imagem para o Drive
+        // Comprovante novo, ainda sem driveId — faz upload pela primeira vez
         try{
           const f = await salvarImagemDrive(a.name, a.data, eventoFolderId);
           dCopy.attachs.push({name:a.name, type:a.type, driveId:f.id, driveLink:f.webViewLink, data:null});
@@ -900,7 +973,7 @@ async function processarComprovantes(despesas, eventoFolderId){
           dCopy.attachs.push({name:a.name, type:a.type, data:a.data}); // mantém local se falhar
         }
       } else {
-        dCopy.attachs.push(a); // já está no Drive ou sem imagem
+        dCopy.attachs.push(a);
       }
     }
     resultado.push(dCopy);
