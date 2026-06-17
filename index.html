@@ -1691,6 +1691,39 @@ function limparEvento(){
 }
 
 // ─── GERAR PDF ────────────────────────────────────────────────
+// Garante que cada comprovante (a.driveId) das despesas passadas já tenha a.data preenchido,
+// baixando do Drive na hora caso ainda não tenha sido carregado pelo processo de background.
+async function garantirComprovantesCarregados(despesas, btn){
+  const pendentes = [];
+  for(const d of despesas){
+    for(const a of (d.attachs||[])){
+      if(a.driveId && !a.data) pendentes.push(a);
+    }
+  }
+  if(!pendentes.length) return;
+
+  for(let i=0;i<pendentes.length;i++){
+    const a = pendentes[i];
+    if(btn) btn.textContent = `⏳ Baixando comprovantes (${i+1}/${pendentes.length})...`;
+    try{
+      const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${a.driveId}?alt=media`,
+        {headers:{'Authorization':'Bearer '+accessToken}}
+      );
+      if(res.ok){
+        const blob = await res.blob();
+        a.data = await new Promise(resolve=>{
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(blob);
+        });
+      }
+    }catch(e){
+      console.warn('Erro ao baixar comprovante antes de gerar PDF:', a.name, e);
+    }
+  }
+}
+
 async function gerarPDFUnificado(){
   if(!gerarEventoId){alert('Selecione um evento.');return}
   const ev=S.eventos.find(e=>e.id===gerarEventoId);
@@ -1699,10 +1732,15 @@ async function gerarPDFUnificado(){
   if(!desp.length){alert('Nenhuma despesa neste evento.');return}
 
   const btn=document.getElementById('btn-gerar-pdf');
-  btn.textContent='⏳ Gerando PDF...';
   btn.disabled=true;
 
   try{
+    // 0. Garante que TODOS os comprovantes deste evento já foram baixados do Drive
+    // antes de montar o PDF — evita gerar a nota sem as imagens quando a pessoa
+    // entra no app e vai direto para "Gerar" antes do carregamento em background terminar.
+    await garantirComprovantesCarregados(desp, btn);
+    btn.textContent='⏳ Gerando PDF...';
+
     // 1. Gerar HTML da nota e converter para imagem com html2canvas
     const notaHTML = gerarHTMLNota(ev, desp);
     const iframe = document.createElement('iframe');
