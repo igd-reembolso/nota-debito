@@ -737,16 +737,55 @@ async function carregarTodasDespesas(){
     try{
       const fid = await getEventoFolderId(ev.id);
       if(!fid) continue;
-      // Buscar despesas.json nesta pasta
       const q = `name='despesas.json' and trashed=false and '${fid}' in parents`;
       const r = await driveReq('GET',
         `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`);
       if(r.files && r.files.length > 0){
         const desp = await lerArquivo(r.files[0].id);
-        if(Array.isArray(desp)) S.despesas.push(...desp);
+        if(Array.isArray(desp)){
+          // Restaurar imagens do Drive para cada despesa
+          const despComImagens = await restaurarImagens(desp);
+          S.despesas.push(...despComImagens);
+        }
       }
     }catch(e){ console.warn('Erro ao carregar despesas do evento:', ev.id, e); }
   }
+}
+
+async function restaurarImagens(despesas){
+  const resultado = [];
+  for(const d of despesas){
+    const dCopy = {...d, attachs:[]};
+    for(const a of (d.attachs||[])){
+      if(a.driveId && !a.data){
+        // Baixar imagem do Drive
+        try{
+          const res = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${a.driveId}?alt=media`,
+            {headers:{'Authorization':'Bearer '+accessToken}}
+          );
+          if(res.ok){
+            const blob = await res.blob();
+            const base64 = await new Promise(resolve=>{
+              const reader = new FileReader();
+              reader.onload = e => resolve(e.target.result);
+              reader.readAsDataURL(blob);
+            });
+            dCopy.attachs.push({...a, data:base64});
+          } else {
+            dCopy.attachs.push(a);
+          }
+        }catch(e){
+          console.warn('Erro ao baixar imagem:', a.name, e);
+          dCopy.attachs.push(a);
+        }
+      } else {
+        dCopy.attachs.push(a);
+      }
+    }
+    resultado.push(dCopy);
+  }
+  return resultado;
 }
 
 // ── Salvar ────────────────────────────────────────────────────
