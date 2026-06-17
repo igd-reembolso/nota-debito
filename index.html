@@ -126,7 +126,6 @@ textarea{resize:vertical;min-height:68px}
 
 /* Banner instalar */
 
-
 #qr-video-wrap{display:none;position:fixed;inset:0;background:#000;z-index:200;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
 #qr-video-wrap.open{display:flex}
 #qr-video{width:100%;max-width:100%;height:100dvh;object-fit:cover;border-radius:0}
@@ -756,55 +755,54 @@ async function carregarTodasDespesas(){
 // Baixa as imagens em BACKGROUND, depois do app já estar visível
 async function restaurarImagensBackground(){
   let alguemAtualizado = false;
-  // Corrige orientação só uma vez por conta — flag salva no _global.json (via localStorage local como cache rápido)
-  const jaCorrigiuOrientacao = localStorage.getItem('nd_fix_orientation_v1') === '1';
-  let precisaSalvarDrive = false;
+  // Nova versão da flag (v2) — força reprocessar mesmo quem já tinha rodado a v1 com bug
+  const jaCorrigiuOrientacao = localStorage.getItem('nd_fix_orientation_v2') === '1';
 
   for(const d of S.despesas){
     if(!d.attachs || !d.attachs.length) continue;
     for(let i=0; i<d.attachs.length; i++){
       const a = d.attachs[i];
-      if(a.driveId && !a.data){
-        try{
-          const res = await fetch(
-            `https://www.googleapis.com/drive/v3/files/${a.driveId}?alt=media`,
-            {headers:{'Authorization':'Bearer '+accessToken}}
-          );
-          if(res.ok){
-            const blob = await res.blob();
-            let base64 = await new Promise(resolve=>{
-              const reader = new FileReader();
-              reader.onload = e => resolve(e.target.result);
-              reader.readAsDataURL(blob);
-            });
+      const ehImagem = a.type && a.type.startsWith('image/');
+      const precisaBaixar = a.driveId && !a.data;
+      const precisaCorrigir = a.driveId && ehImagem && !jaCorrigiuOrientacao;
 
-            // Correção automática de orientação — só roda uma vez por conta, e só para imagens.
-            // createImageBitmap com imageOrientation:'from-image' já decide sozinho, com segurança,
-            // se precisa rotacionar ou não — nunca gira uma foto que já está correta.
-            if(!jaCorrigiuOrientacao && a.type && a.type.startsWith('image/')){
-              try{
-                const arrayBuffer = await blob.arrayBuffer();
-                const corrigida = await corrigirOrientacaoDeBuffer(arrayBuffer);
-                base64 = corrigida;
-                await reenviarImagemCorrigida(a.driveId, base64);
-                precisaSalvarDrive = true;
-              }catch(e){
-                console.warn('Falha ao corrigir orientação de:', a.name, e);
-              }
-            }
+      if(!precisaBaixar && !precisaCorrigir) continue;
 
-            d.attachs[i] = {...a, data:base64, type: a.type && a.type.startsWith('image/') ? 'image/jpeg' : a.type};
-            alguemAtualizado = true;
+      try{
+        const res = await fetch(
+          `https://www.googleapis.com/drive/v3/files/${a.driveId}?alt=media`,
+          {headers:{'Authorization':'Bearer '+accessToken}}
+        );
+        if(!res.ok) continue;
+        const blob = await res.blob();
+        let base64 = await new Promise(resolve=>{
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(blob);
+        });
+
+        // Corrige orientação de fotos antigas — createImageBitmap decide com segurança
+        // se precisa rotacionar ou não, nunca gira uma foto que já está correta.
+        if(precisaCorrigir){
+          try{
+            const arrayBuffer = await blob.arrayBuffer();
+            base64 = await corrigirOrientacaoDeBuffer(arrayBuffer);
+            await reenviarImagemCorrigida(a.driveId, base64);
+          }catch(e){
+            console.warn('Falha ao corrigir orientação de:', a.name, e);
           }
-        }catch(e){
-          console.warn('Erro ao baixar imagem em background:', a.name, e);
         }
+
+        d.attachs[i] = {...a, data:base64, type: ehImagem ? 'image/jpeg' : a.type};
+        alguemAtualizado = true;
+      }catch(e){
+        console.warn('Erro ao baixar imagem em background:', a.name, e);
       }
     }
   }
 
   if(!jaCorrigiuOrientacao){
-    localStorage.setItem('nd_fix_orientation_v1','1');
+    localStorage.setItem('nd_fix_orientation_v2','1');
   }
 
   if(alguemAtualizado){
@@ -1008,7 +1006,6 @@ function fazerLogout(){
   document.getElementById('main-app').style.display='none';
   mostrarTelaLogin(false);
 }
-
 
 // ─── UTILS ────────────────────────────────────────────────────
 function fv(v){return'R$ '+parseFloat(v).toFixed(2).replace('.',',')}
@@ -1473,7 +1470,6 @@ function rejeitarQR(){
   setTimeout(()=>iniciarQR(),300);
 }
 
-
 function setNFManual(v){if(v.startsWith('http'))setNF(v.trim())}
 function setNF(link){
   nfLink=link;
@@ -1488,7 +1484,6 @@ function clearNF(){
   document.getElementById('qr-area').style.display='block';
   document.getElementById('qr-manual').value='';
 }
-
 
 function renderAttachs(){
   const el=document.getElementById('attach-list');
@@ -2150,25 +2145,11 @@ ${comprovantesHTML}
 
 </div><!-- /main-app -->
 
-
-
-
-
-
-
-
-
 </body></html>`;
 
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
   window.open(URL.createObjectURL(blob),'_blank');
 }
-
-
-
-
-
-
 
 // ─── CROP ─────────────────────────────────────────────────────
 
@@ -2231,12 +2212,6 @@ function corrigirOrientacaoImagem(file){
     reader.readAsDataURL(file);
   });
 }
-
-
-
-
-
-
 
 // Touch/mouse events for crop
 
@@ -2977,7 +2952,6 @@ self.addEventListener('fetch', e => {
 initGoogle();
 </script>
 
-
 <!-- MODAL NOVO EVENTO -->
 <div class="modal-overlay" id="modal-evento">
   <div class="modal">
@@ -3023,7 +2997,6 @@ initGoogle();
   </div>
 </div>
 
-
 <!-- MODAL EDITAR PRESTADOR -->
 <div class="modal-overlay" id="modal-prestador">
   <div class="modal">
@@ -3042,7 +3015,6 @@ initGoogle();
     <button class="btn btn-primary mt16" onclick="salvarPrestador()">💾 Salvar</button>
   </div>
 </div>
-
 
 <!-- MODAL DADOS BANCÁRIOS -->
 <div class="modal-overlay" id="modal-banco">
@@ -3063,7 +3035,6 @@ initGoogle();
   </div>
 </div>
 
-
 <!-- MODAL TOMADORES -->
 <div class="modal-overlay" id="modal-tomadores">
   <div class="modal">
@@ -3076,7 +3047,6 @@ initGoogle();
   </div>
 </div>
 
-
 <!-- MODAL ENVIO -->
 <div class="modal-overlay" id="modal-envio">
   <div class="modal">
@@ -3087,7 +3057,6 @@ initGoogle();
     <button class="btn btn-primary mt16" onclick="salvarEnvio()">💾 Salvar</button>
   </div>
 </div>
-
 
 <!-- MODAL EDITAR DESPESA -->
 <div class="modal-overlay" id="modal-editar">
@@ -3160,7 +3129,6 @@ initGoogle();
   </div>
 </div>
 
-
 <!-- MODAL CONFIRMAÇÃO QR -->
 <div class="modal-overlay" id="qr-confirm-modal">
   <div class="modal">
@@ -3171,7 +3139,6 @@ initGoogle();
     <button class="btn mt8" onclick="rejeitarQR()">🔄 Ler novamente</button>
   </div>
 </div>
-
 
 <!-- MODAL AJUDA -->
 <div class="modal-overlay" id="modal-ajuda">
@@ -3210,7 +3177,6 @@ initGoogle();
     <button class="btn btn-primary mt16" onclick="closeModal('modal-ajuda');iniciarTour()">▶️ Ver tour interativo</button>
   </div>
 </div>
-
 
 <!-- TOUR OVERLAY -->
 <div class="tour-overlay" id="tour-overlay">
