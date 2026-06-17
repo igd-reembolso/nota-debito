@@ -756,6 +756,10 @@ async function carregarTodasDespesas(){
 // Baixa as imagens em BACKGROUND, depois do app já estar visível
 async function restaurarImagensBackground(){
   let alguemAtualizado = false;
+  // Corrige orientação só uma vez por conta — flag salva no _global.json (via localStorage local como cache rápido)
+  const jaCorrigiuOrientacao = localStorage.getItem('nd_fix_orientation_v1') === '1';
+  let precisaSalvarDrive = false;
+
   for(const d of S.despesas){
     if(!d.attachs || !d.attachs.length) continue;
     for(let i=0; i<d.attachs.length; i++){
@@ -768,12 +772,30 @@ async function restaurarImagensBackground(){
           );
           if(res.ok){
             const blob = await res.blob();
-            const base64 = await new Promise(resolve=>{
+            let base64 = await new Promise(resolve=>{
               const reader = new FileReader();
               reader.onload = e => resolve(e.target.result);
               reader.readAsDataURL(blob);
             });
-            d.attachs[i] = {...a, data:base64};
+
+            // Correção automática de orientação — só roda uma vez por conta, e só para imagens
+            if(!jaCorrigiuOrientacao && a.type && a.type.startsWith('image/')){
+              try{
+                const arrayBuffer = await blob.arrayBuffer();
+                const orientation = lerOrientacaoExif(arrayBuffer);
+                if(orientation && orientation !== 1){
+                  const corrigida = await corrigirOrientacaoDeBuffer(arrayBuffer, orientation);
+                  base64 = corrigida;
+                  // Reenvia a versão corrigida para o Drive, sobrescrevendo o arquivo original
+                  await reenviarImagemCorrigida(a.driveId, base64);
+                  precisaSalvarDrive = true;
+                }
+              }catch(e){
+                console.warn('Falha ao corrigir orientação de:', a.name, e);
+              }
+            }
+
+            d.attachs[i] = {...a, data:base64, type: a.type && a.type.startsWith('image/') ? 'image/jpeg' : a.type};
             alguemAtualizado = true;
           }
         }catch(e){
@@ -782,11 +804,63 @@ async function restaurarImagensBackground(){
       }
     }
   }
+
+  if(!jaCorrigiuOrientacao){
+    localStorage.setItem('nd_fix_orientation_v1','1');
+  }
+
   if(alguemAtualizado){
-    // Re-renderiza a tela de despesas se estiver visível
     const despesasEl = document.getElementById('screen-despesas');
     if(despesasEl && despesasEl.classList.contains('active')) renderDespesas();
   }
+}
+
+// Mesma lógica de corrigirOrientacaoImagem, mas recebendo um ArrayBuffer já em memória
+function corrigirOrientacaoDeBuffer(arrayBuffer, orientation){
+  return new Promise((resolve, reject)=>{
+    const blob = new Blob([arrayBuffer]);
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if(orientation >= 5 && orientation <= 8){
+        canvas.width = h; canvas.height = w;
+      } else {
+        canvas.width = w; canvas.height = h;
+      }
+      const ctx = canvas.getContext('2d');
+      switch(orientation){
+        case 2: ctx.transform(-1,0,0,1,w,0); break;
+        case 3: ctx.transform(-1,0,0,-1,w,h); break;
+        case 4: ctx.transform(1,0,0,-1,0,h); break;
+        case 5: ctx.transform(0,1,1,0,0,0); break;
+        case 6: ctx.transform(0,1,-1,0,h,0); break;
+        case 7: ctx.transform(0,-1,-1,0,h,w); break;
+        case 8: ctx.transform(0,-1,1,0,0,w); break;
+        default: break;
+      }
+      ctx.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Erro ao carregar imagem')); };
+    img.src = url;
+  });
+}
+
+// Sobrescreve o arquivo de imagem já existente no Drive com a versão corrigida
+async function reenviarImagemCorrigida(driveId, base64){
+  const mimeType = base64.split(';')[0].split(':')[1] || 'image/jpeg';
+  const byteStr = atob(base64.split(',')[1]);
+  const arr = new Uint8Array(byteStr.length);
+  for(let i=0;i<byteStr.length;i++) arr[i]=byteStr.charCodeAt(i);
+  const blob = new Blob([arr], {type:mimeType});
+  await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveId}?uploadType=media`, {
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+accessToken,'Content-Type':mimeType},
+    body: blob
+  });
 }
 
 // ── Salvar ────────────────────────────────────────────────────
