@@ -687,6 +687,8 @@ async function iniciarDrive(){
     localStorage.setItem('nd_drive_auth','1');
     mostrarApp();
     setSyncStatus('✓ conectado');
+    // Baixa imagens em background, sem travar a tela
+    restaurarImagensBackground().catch(e=>console.warn('Background image load error:',e));
   }catch(e){
     console.error('Drive init error:', e);
     // Tenta de novo uma vez após 2 segundos
@@ -743,22 +745,22 @@ async function carregarTodasDespesas(){
       if(r.files && r.files.length > 0){
         const desp = await lerArquivo(r.files[0].id);
         if(Array.isArray(desp)){
-          // Restaurar imagens do Drive para cada despesa
-          const despComImagens = await restaurarImagens(desp);
-          S.despesas.push(...despComImagens);
+          // Carrega despesas SEM imagens primeiro — app abre rápido
+          S.despesas.push(...desp);
         }
       }
     }catch(e){ console.warn('Erro ao carregar despesas do evento:', ev.id, e); }
   }
 }
 
-async function restaurarImagens(despesas){
-  const resultado = [];
-  for(const d of despesas){
-    const dCopy = {...d, attachs:[]};
-    for(const a of (d.attachs||[])){
+// Baixa as imagens em BACKGROUND, depois do app já estar visível
+async function restaurarImagensBackground(){
+  let alguemAtualizado = false;
+  for(const d of S.despesas){
+    if(!d.attachs || !d.attachs.length) continue;
+    for(let i=0; i<d.attachs.length; i++){
+      const a = d.attachs[i];
       if(a.driveId && !a.data){
-        // Baixar imagem do Drive
         try{
           const res = await fetch(
             `https://www.googleapis.com/drive/v3/files/${a.driveId}?alt=media`,
@@ -771,21 +773,20 @@ async function restaurarImagens(despesas){
               reader.onload = e => resolve(e.target.result);
               reader.readAsDataURL(blob);
             });
-            dCopy.attachs.push({...a, data:base64});
-          } else {
-            dCopy.attachs.push(a);
+            d.attachs[i] = {...a, data:base64};
+            alguemAtualizado = true;
           }
         }catch(e){
-          console.warn('Erro ao baixar imagem:', a.name, e);
-          dCopy.attachs.push(a);
+          console.warn('Erro ao baixar imagem em background:', a.name, e);
         }
-      } else {
-        dCopy.attachs.push(a);
       }
     }
-    resultado.push(dCopy);
   }
-  return resultado;
+  if(alguemAtualizado){
+    // Re-renderiza a tela de despesas se estiver visível
+    const despesasEl = document.getElementById('screen-despesas');
+    if(despesasEl && despesasEl.classList.contains('active')) renderDespesas();
+  }
 }
 
 // ── Salvar ────────────────────────────────────────────────────
