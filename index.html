@@ -345,20 +345,20 @@ textarea{resize:vertical;min-height:68px}
   <div id="screen-config" class="screen">
     <div class="slabel">Prestador (você)</div>
     <div class="info-card" id="config-prestador-view">
-      <div class="pf"><div class="fl">Razão Social</div><div class="fv" id="cfg-nome">Joedres Ferreira Vilas Boas</div></div>
-      <div class="pf"><div class="fl">CNPJ</div><div class="fv" id="cfg-cnpj">52.150.205/0001-57</div></div>
-      <div class="pf"><div class="fl">E-mail</div><div class="fv" id="cfg-email">joedres_vilasboas@hotmail.com</div></div>
-      <div class="pf"><div class="fl">Telefone</div><div class="fv" id="cfg-tel">11 97547-8716</div></div>
-      <div class="pf"><div class="fl">Endereço</div><div class="fv" id="cfg-end">Av. Eugênio Coltro, 1925 - Bl. 05, Ap. 301 - Salto Ville - Salto/SP, 13323-420</div></div>
+      <div class="pf"><div class="fl">Razão Social</div><div class="fv" id="cfg-nome"></div></div>
+      <div class="pf"><div class="fl">CNPJ</div><div class="fv" id="cfg-cnpj"></div></div>
+      <div class="pf"><div class="fl">E-mail</div><div class="fv" id="cfg-email"></div></div>
+      <div class="pf"><div class="fl">Telefone</div><div class="fv" id="cfg-tel"></div></div>
+      <div class="pf"><div class="fl">Endereço</div><div class="fv" id="cfg-end"></div></div>
       <button class="btn btn-sm mt8" onclick="abrirEditarPrestador()" style="width:auto">✏️ Editar dados</button>
     </div>
     <div class="slabel">Dados bancários</div>
     <div class="info-card">
-      <div class="pf"><div class="fl">Banco</div><div class="fv" id="cfg-banco">BTG Pactual S.A. (208)</div></div>
-      <div class="pf"><div class="fl">Agência</div><div class="fv" id="cfg-agencia">0050</div></div>
-      <div class="pf"><div class="fl">Conta Corrente (PJ)</div><div class="fv" id="cfg-conta">848596-8</div></div>
-      <div class="pf"><div class="fl">Titular</div><div class="fv" id="cfg-titular">Joedres Ferreira Vilas Boas</div></div>
-      <div class="pf"><div class="fl">CNPJ vinculado</div><div class="fv" id="cfg-cnpj-banco">52.150.205/0001-57</div></div>
+      <div class="pf"><div class="fl">Banco</div><div class="fv" id="cfg-banco"></div></div>
+      <div class="pf"><div class="fl">Agência</div><div class="fv" id="cfg-agencia"></div></div>
+      <div class="pf"><div class="fl">Conta Corrente (PJ)</div><div class="fv" id="cfg-conta"></div></div>
+      <div class="pf"><div class="fl">Titular</div><div class="fv" id="cfg-titular"></div></div>
+      <div class="pf"><div class="fl">CNPJ vinculado</div><div class="fv" id="cfg-cnpj-banco"></div></div>
       <button class="btn btn-sm mt8" onclick="abrirEditarBanco()" style="width:auto">✏️ Editar</button>
     </div>
     <div class="slabel">Tomadores cadastrados</div>
@@ -422,7 +422,10 @@ const TOMADORES_PADRAO={
 };
 // TOMADORES é o objeto ativo — começa com os padrões
 const TOMADORES=JSON.parse(JSON.stringify(TOMADORES_PADRAO));
-const ME={nome:'Joedres Ferreira Vilas Boas',cnpj:'52.150.205/0001-57',email:'joedres_vilasboas@hotmail.com',tel:'11 97547-8716',end:'Av. Eugênio Coltro, 1925 - Bl. 05, Ap. 301 - Salto Ville - Salto/SP, 13323-420',banco:'BTG Pactual S.A.',cod:'208',ag:'0050',conta:'848596-8'};
+// Valores de fallback antes do usuário preencher o setup — sem dados reais
+// (o código fica público no GitHub Pages; os dados de verdade ficam só no
+// Drive de cada usuário, preenchidos via tela de configuração).
+const ME={nome:'',cnpj:'',email:'',tel:'',end:'',banco:'',cod:'',ag:'',conta:''};
 
 // ─── ESTADO ───────────────────────────────────────────────────
 let S={eventos:[],despesas:[],notaCounter:0,eventoAtivo:''};
@@ -2030,7 +2033,7 @@ function gerarHTMLNota(ev, desp){
   const me={
     nome:p.nome||ME.nome, cnpj:p.cnpj||ME.cnpj,
     email:p.email||ME.email, end:p.end||'',
-    banco:p.banco||ME.banco+' ('+ME.cod+')',
+    banco:p.banco||(ME.banco||ME.cod?ME.banco+(ME.cod?' ('+ME.cod+')':''):''),
     ag:p.agencia||ME.ag, conta:p.conta||ME.conta,
     titular:p.titular||p.nome||ME.nome,
     cnpjConta:p.cnpjBanco||p.cnpj||ME.cnpj
@@ -2148,7 +2151,7 @@ function gerarPDF(){
     cnpj: p.cnpj||document.getElementById('cfg-cnpj')?.textContent.trim()||ME.cnpj,
     email: p.email||document.getElementById('cfg-email')?.textContent.trim()||ME.email,
     end: p.end||document.getElementById('cfg-end')?.textContent.trim()||'',
-    banco: p.banco||ME.banco+' ('+ME.cod+')',
+    banco: p.banco||(ME.banco||ME.cod?ME.banco+(ME.cod?' ('+ME.cod+')':''):''),
     ag: p.agencia||ME.ag,
     conta: p.conta||ME.conta,
     titular: p.titular||ME.nome,
@@ -2394,7 +2397,7 @@ function corrigirOrientacaoImagem(file){
 // ─── EDITAR DADOS BANCÁRIOS ───────────────────────────────────
 function abrirEditarBanco(){
   const p=S.prestador||{};
-  document.getElementById('eb-banco').value=p.banco||document.getElementById('cfg-banco').textContent||ME.banco+' ('+ME.cod+')';
+  document.getElementById('eb-banco').value=p.banco||document.getElementById('cfg-banco').textContent||(ME.banco||ME.cod?ME.banco+(ME.cod?' ('+ME.cod+')':''):'');
   document.getElementById('eb-agencia').value=p.agencia||document.getElementById('cfg-agencia').textContent||ME.ag;
   document.getElementById('eb-conta').value=p.conta||document.getElementById('cfg-conta').textContent||ME.conta;
   document.getElementById('eb-titular').value=p.titular||document.getElementById('cfg-titular').textContent||ME.nome;
@@ -3174,11 +3177,11 @@ initGoogle();
     <button class="modal-close" onclick="closeModal('modal-banco')">✕</button>
     <h2>🏦 Dados bancários</h2>
     <label>Banco</label>
-    <input type="text" id="eb-banco" placeholder="Ex: BTG Pactual S.A. (208)" />
+    <input type="text" id="eb-banco" placeholder="Ex: Banco XYZ S.A. (000)" />
     <label>Agência</label>
-    <input type="text" id="eb-agencia" placeholder="Ex: 0050" />
+    <input type="text" id="eb-agencia" placeholder="Ex: 0001" />
     <label>Conta Corrente (PJ)</label>
-    <input type="text" id="eb-conta" placeholder="Ex: 848596-8" />
+    <input type="text" id="eb-conta" placeholder="Ex: 00000-0" />
     <label>Titular</label>
     <input type="text" id="eb-titular" />
     <label>CNPJ vinculado</label>
