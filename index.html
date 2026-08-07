@@ -2990,6 +2990,12 @@ function enviarEmail(){
   const total=desp.reduce((s,d)=>s+d.valor,0);
   const nomeEvento=ev.nome+(ev.cidade?' | '+ev.cidade:'');
   const emailFinanceiro=p.emailEnvio||document.getElementById('cfg-email-envio')?.textContent||'financeiro@platmentorias.com.br';
+  const me={
+    banco:p.banco||(ME.banco||ME.cod?ME.banco+(ME.cod?' ('+ME.cod+')':''):''),
+    ag:p.agencia||ME.ag, conta:p.conta||ME.conta,
+    titular:p.titular||p.nome||ME.nome,
+    cnpjConta:p.cnpjBanco||p.cnpj||ME.cnpj
+  };
 
   const assunto=`Nota de Débito para reembolso — ${nomeEvento}`;
 
@@ -3001,6 +3007,13 @@ Segue em anexo a Nota de Débito referente às despesas do evento abaixo para an
 📅 Evento: ${nomeEvento}
 💰 Valor total: ${fv(total)}
 📄 Nota Nº: ${num}
+
+🏦 Dados bancários para pagamento:
+Banco: ${me.banco}
+Agência: ${me.ag}
+Conta: ${me.conta}
+Favorecido: ${me.titular}
+CPF/CNPJ (vinculado à conta): ${me.cnpjConta}
 
 Todos os comprovantes estão incluídos no PDF anexo.
 Qualquer dúvida, estou à disposição.
