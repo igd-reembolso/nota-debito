@@ -1517,8 +1517,10 @@ function atualizarDesc(){
 
 // ─── QR CODE ──────────────────────────────────────────────────
 let zxingReader=null;
+let qrTarget='lancar'; // 'lancar' ou 'editar' — para saber onde aplicar o link lido
 
-async function iniciarQR(){
+async function iniciarQR(target){
+  qrTarget=target||'lancar';
   document.getElementById('qr-video-wrap').classList.add('open');
   try{
     if(!zxingReader){
@@ -1641,7 +1643,10 @@ function confirmarQR(txt){
 
 function aceitarQR(){
   document.getElementById('qr-confirm-modal').classList.remove('open');
-  if(window._pendingQR) setNF(window._pendingQR);
+  if(window._pendingQR){
+    if(qrTarget==='editar') setEditNF(window._pendingQR);
+    else setNF(window._pendingQR);
+  }
   window._pendingQR=null;
 }
 
@@ -1649,7 +1654,7 @@ function rejeitarQR(){
   document.getElementById('qr-confirm-modal').classList.remove('open');
   window._pendingQR=null;
   // Reabrir câmera
-  setTimeout(()=>iniciarQR(),300);
+  setTimeout(()=>iniciarQR(qrTarget),300);
 }
 
 function setNFManual(v){if(v.startsWith('http'))setNF(v.trim())}
@@ -2771,13 +2776,12 @@ function atualizarEditDesc(){
   if(el) el.innerHTML='<span>'+linha1+'</span><br><span style="color:var(--text2);font-size:13px">'+linha2+'</span>';
 }
 
-function setEditNFManual(v){
-  if(v.startsWith('http')){
-    editNFLink=v.trim();
-    document.getElementById('edit-nf-text').textContent=editNFLink;
-    document.getElementById('edit-nf-show').style.display='flex';
-    document.getElementById('edit-nf-manual').value='';
-  }
+function setEditNFManual(v){if(v.startsWith('http'))setEditNF(v.trim())}
+function setEditNF(link){
+  editNFLink=link;
+  document.getElementById('edit-nf-text').textContent=editNFLink;
+  document.getElementById('edit-nf-show').style.display='flex';
+  document.getElementById('edit-nf-manual').value='';
 }
 function clearEditNF(){
   editNFLink='';
@@ -3340,12 +3344,16 @@ initGoogle();
       style="font-size:18px;font-weight:500" />
 
     <div class="slabel">Link NF-e</div>
+    <div class="drop" onclick="iniciarQR('editar')" id="edit-qr-area" style="margin-top:0">
+      <div class="di">📷</div>
+      <p>Escanear QR code da NF-e<br><small>Toque para abrir a câmera</small></p>
+    </div>
     <div id="edit-nf-show" style="display:none" class="thumb">
       <span class="ti">🔗</span>
       <span class="tn" id="edit-nf-text"></span>
       <button class="tr" onclick="clearEditNF()">✕</button>
     </div>
-    <input type="text" id="edit-nf-manual" placeholder="Link da NF-e" oninput="setEditNFManual(this.value)" />
+    <input type="text" id="edit-nf-manual" placeholder="Ou cole o link da NF-e aqui" style="margin-top:8px" oninput="setEditNFManual(this.value)" />
 
     <div class="slabel">Comprovantes</div>
     <div id="edit-attach-list"></div>
