@@ -1145,7 +1145,10 @@ function escAttr(s){
 function fv(v){return'R$ '+parseFloat(v).toFixed(2).replace('.',',')}
 function nomeEvento(ev){return ev.nome+(ev.cidade?' | '+ev.cidade:'');}
 function fd(s){if(!s)return'';const[y,m,d]=s.split('-');return d+'/'+m+'/'+y}
-function todayStr(){return new Date().toISOString().split('T')[0]}
+function todayStr(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function padNum(n){return String(n).padStart(4,'0')}
 function mesToRef(){const now=new Date();const m=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return m[now.getMonth()]+'-'+String(now.getFullYear()).slice(2)}
 
