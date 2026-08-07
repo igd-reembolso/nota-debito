@@ -411,10 +411,12 @@ textarea{resize:vertical;min-height:68px}
     <span style="position:absolute;top:0;right:0;width:40px;height:40px;border-top:4px solid #fff;border-right:4px solid #fff;border-radius:0 12px 0 0"></span>
     <span style="position:absolute;bottom:0;left:0;width:40px;height:40px;border-bottom:4px solid #fff;border-left:4px solid #fff;border-radius:0 0 0 12px"></span>
   </div>
-  <p style="position:absolute;bottom:156px;color:#fff;font-size:14px;text-align:center;padding:0 32px;opacity:.85">Se não focar sozinho, toque na tela sobre o QR ou use o botão abaixo</p>
+  <p style="position:absolute;bottom:216px;color:#fff;font-size:14px;text-align:center;padding:0 32px;opacity:.85">Se não focar sozinho, toque na tela sobre o QR ou use um dos botões abaixo</p>
+  <button class="qr-cancel" onclick="abrirCameraNativa()" style="position:absolute;bottom:156px;background:#34c759;color:#fff">🎯 Usar app de câmera do celular</button>
   <button class="qr-cancel" id="qr-capture-btn" onclick="capturarFotoQR()" style="position:absolute;bottom:96px;background:#0a84ff;color:#fff">📸 Focar e capturar foto</button>
   <button class="qr-cancel" onclick="pararQR()" style="position:absolute;bottom:36px">✕ Cancelar</button>
 </div>
+<input type="file" id="qr-file-camera" accept="image/*" capture="environment" style="display:none" onchange="lerQRDeArquivo(event)" />
 
 <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 <script>
@@ -1692,9 +1694,60 @@ async function capturarFotoQR(){
   }
 }
 
+// Usa o app de câmera nativo do celular (fora do controle do navegador) para tirar
+// a foto e decodifica o QR a partir do arquivo resultante. Caminho mais confiável
+// quando a câmera via getUserMedia não foca bem nesse aparelho — o app nativo tem
+// acesso direto ao hardware, sem as limitações da API de câmera do navegador.
+function abrirCameraNativa(){
+  // Solta nosso stream ANTES de abrir o app nativo, para as duas câmeras não
+  // disputarem o hardware ao mesmo tempo.
+  if(qrStream){
+    try{qrStream.getTracks().forEach(t=>t.stop());}catch(e){}
+    qrStream=null;
+  }
+  document.getElementById('qr-file-camera').click();
+}
+
+async function lerQRDeArquivo(e){
+  const f=e.target.files[0];
+  e.target.value='';
+  if(!f){
+    // Cancelou o app nativo sem tirar foto — reabre a câmera ao vivo, já que
+    // paramos o stream antes de abrir o seletor.
+    iniciarQR(qrTarget);
+    return;
+  }
+  try{
+    if(!zxingReader){
+      const hints=new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.QR_CODE]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      zxingReader=new ZXing.BrowserMultiFormatReader(hints);
+    }
+    const reader=new FileReader();
+    const dataUrl=await new Promise((res,rej)=>{
+      reader.onload=ev=>res(ev.target.result);
+      reader.onerror=()=>rej(new Error('Erro ao ler arquivo'));
+      reader.readAsDataURL(f);
+    });
+    const result=await zxingReader.decodeFromImageUrl(dataUrl);
+    const txt=result.getText();
+    if(txt){pararQR();confirmarQR(txt);}
+  }catch(err){
+    alert('Não consegui ler o QR nessa foto. Tire de novo, de frente e com boa luz, ou cole o link manualmente.');
+  }
+}
+
 function pararQR(){
   if(zxingReader){
     try{zxingReader.reset();}catch(e){}
+  }
+  // Sem isso, a câmera do getUserMedia continuava "aberta" em segundo plano a cada
+  // vez que a leitura era cancelada/repetida, podendo forçar o Android a entregar
+  // acesso compartilhado/degradado (sem foco automático completo) nas próximas vezes.
+  if(qrStream){
+    try{qrStream.getTracks().forEach(t=>t.stop());}catch(e){}
+    qrStream=null;
   }
   document.getElementById('qr-video-wrap').classList.remove('open');
 }
