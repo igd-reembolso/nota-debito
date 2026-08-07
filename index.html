@@ -1629,14 +1629,17 @@ function mostrarAnelFoco(x,y){
 }
 
 // Fallback para quando o foco contínuo/manual via getUserMedia simplesmente não é
-// suportado pelo aparelho: tira uma foto parada (dá tempo da lente assentar o foco
-// antes de capturar) e decodifica essa imagem, em vez de depender do vídeo ao vivo.
+// suportado pelo aparelho: tira uma foto de verdade via ImageCapture (aciona o
+// mesmo pipeline de captura do app de câmera nativo, com seu próprio ciclo de
+// foco — diferente de só pegar um frame do preview ao vivo, que sai borrado se
+// o preview já estiver desfocado) e decodifica essa imagem.
 async function capturarFotoQR(){
   if(!qrStream||!zxingReader)return;
   const track=qrStream.getVideoTracks()[0];
   const video=document.getElementById('qr-video');
   const btn=document.getElementById('qr-capture-btn');
   if(btn){btn.disabled=true;btn.textContent='🔎 Focando...';}
+  let objectUrl=null;
   try{
     if(track&&track.getCapabilities){
       const caps=track.getCapabilities()||{};
@@ -1650,18 +1653,30 @@ async function capturarFotoQR(){
     await new Promise(r=>setTimeout(r,600));
 
     if(btn) btn.textContent='📸 Lendo...';
-    const canvas=document.createElement('canvas');
-    canvas.width=video.videoWidth;
-    canvas.height=video.videoHeight;
-    canvas.getContext('2d').drawImage(video,0,0);
-    const dataUrl=canvas.toDataURL('image/jpeg',0.95);
+    let dataUrl=null;
+    if(window.ImageCapture&&track){
+      try{
+        const imageCapture=new ImageCapture(track);
+        const blob=await imageCapture.takePhoto();
+        objectUrl=URL.createObjectURL(blob);
+        dataUrl=objectUrl;
+      }catch(e){console.warn('ImageCapture falhou, usando frame do vídeo:',e);}
+    }
+    if(!dataUrl){
+      const canvas=document.createElement('canvas');
+      canvas.width=video.videoWidth;
+      canvas.height=video.videoHeight;
+      canvas.getContext('2d').drawImage(video,0,0);
+      dataUrl=canvas.toDataURL('image/jpeg',0.95);
+    }
 
     const result=await zxingReader.decodeFromImageUrl(dataUrl);
     const txt=result.getText();
     if(txt){pararQR();confirmarQR(txt);}
   }catch(e){
-    alert('Não consegui ler o QR nessa foto. Ajuste a distância (nem muito perto, nem muito longe) e tente de novo.');
+    alert('Não consegui ler o QR nessa foto. Afaste um pouco o celular (uns 15-20cm do papel) e tente de novo — muito perto, a câmera não consegue focar.');
   }finally{
+    if(objectUrl) URL.revokeObjectURL(objectUrl);
     if(btn){btn.disabled=false;btn.textContent='📸 Focar e capturar foto';}
   }
 }
