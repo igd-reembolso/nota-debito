@@ -1555,8 +1555,10 @@ async function iniciarQR(){
         if(caps.focusMode?.includes('continuous')) apply.focusMode='continuous';
         if(caps.exposureMode?.includes('continuous')) apply.exposureMode='continuous';
         if(caps.whiteBalanceMode?.includes('continuous')) apply.whiteBalanceMode='continuous';
-        // Zoom mínimo para ver mais área
-        if(caps.zoom) apply.zoom=caps.zoom.min;
+        // Zoom neutro (1x) — nunca abaixo disso: em aparelhos com múltiplas lentes,
+        // zoom < 1x costuma trocar para a lente ultra-wide, que tem foco ruim/fixo
+        // e é a causa mais comum de "não foca" ao ler QR code de perto.
+        if(caps.zoom) apply.zoom=Math.min(caps.zoom.max, Math.max(1, caps.zoom.min));
         if(Object.keys(apply).length) await track.applyConstraints({advanced:[apply]});
       }catch(e){console.warn('applyConstraints:',e)}
     }
