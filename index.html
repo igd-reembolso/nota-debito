@@ -411,7 +411,8 @@ textarea{resize:vertical;min-height:68px}
     <span style="position:absolute;top:0;right:0;width:40px;height:40px;border-top:4px solid #fff;border-right:4px solid #fff;border-radius:0 12px 0 0"></span>
     <span style="position:absolute;bottom:0;left:0;width:40px;height:40px;border-bottom:4px solid #fff;border-left:4px solid #fff;border-radius:0 0 0 12px"></span>
   </div>
-  <p style="position:absolute;bottom:100px;color:#fff;font-size:14px;text-align:center;padding:0 32px;opacity:.85">Aponte para o QR code — se não focar, toque na tela sobre o QR</p>
+  <p style="position:absolute;bottom:156px;color:#fff;font-size:14px;text-align:center;padding:0 32px;opacity:.85">Se não focar sozinho, toque na tela sobre o QR ou use o botão abaixo</p>
+  <button class="qr-cancel" id="qr-capture-btn" onclick="capturarFotoQR()" style="position:absolute;bottom:96px;background:#0a84ff;color:#fff">📸 Focar e capturar foto</button>
   <button class="qr-cancel" onclick="pararQR()" style="position:absolute;bottom:36px">✕ Cancelar</button>
 </div>
 
@@ -1625,6 +1626,44 @@ function mostrarAnelFoco(x,y){
   ring.classList.add('active');
   clearTimeout(ring._t);
   ring._t=setTimeout(()=>ring.classList.remove('active'),700);
+}
+
+// Fallback para quando o foco contínuo/manual via getUserMedia simplesmente não é
+// suportado pelo aparelho: tira uma foto parada (dá tempo da lente assentar o foco
+// antes de capturar) e decodifica essa imagem, em vez de depender do vídeo ao vivo.
+async function capturarFotoQR(){
+  if(!qrStream||!zxingReader)return;
+  const track=qrStream.getVideoTracks()[0];
+  const video=document.getElementById('qr-video');
+  const btn=document.getElementById('qr-capture-btn');
+  if(btn){btn.disabled=true;btn.textContent='🔎 Focando...';}
+  try{
+    if(track&&track.getCapabilities){
+      const caps=track.getCapabilities()||{};
+      if(caps.focusMode?.includes('single-shot')){
+        const apply={focusMode:'single-shot'};
+        if(caps.pointsOfInterest) apply.pointsOfInterest=[{x:0.5,y:0.5}];
+        try{await track.applyConstraints({advanced:[apply]});}catch(e){}
+      }
+    }
+    // Tempo para a lente assentar o foco antes de capturar
+    await new Promise(r=>setTimeout(r,600));
+
+    if(btn) btn.textContent='📸 Lendo...';
+    const canvas=document.createElement('canvas');
+    canvas.width=video.videoWidth;
+    canvas.height=video.videoHeight;
+    canvas.getContext('2d').drawImage(video,0,0);
+    const dataUrl=canvas.toDataURL('image/jpeg',0.95);
+
+    const result=await zxingReader.decodeFromImageUrl(dataUrl);
+    const txt=result.getText();
+    if(txt){pararQR();confirmarQR(txt);}
+  }catch(e){
+    alert('Não consegui ler o QR nessa foto. Ajuste a distância (nem muito perto, nem muito longe) e tente de novo.');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='📸 Focar e capturar foto';}
+  }
 }
 
 function pararQR(){
