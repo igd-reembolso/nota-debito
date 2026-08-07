@@ -1657,7 +1657,18 @@ async function capturarFotoQR(){
     if(window.ImageCapture&&track){
       try{
         const imageCapture=new ImageCapture(track);
-        const blob=await imageCapture.takePhoto();
+        // Pede a foto na maior resolução que a câmera suportar (não a do preview de
+        // vídeo, que costuma ser bem menor) — com o celular mais longe pra focar,
+        // o QR fica pequeno na imagem, e mais pixels ajudam o leitor a decodificar.
+        let photoOptions={};
+        try{
+          const photoCaps=await imageCapture.getPhotoCapabilities();
+          if(photoCaps.imageWidth&&photoCaps.imageHeight){
+            photoOptions.imageWidth=photoCaps.imageWidth.max;
+            photoOptions.imageHeight=photoCaps.imageHeight.max;
+          }
+        }catch(e){}
+        const blob=await imageCapture.takePhoto(photoOptions);
         objectUrl=URL.createObjectURL(blob);
         dataUrl=objectUrl;
       }catch(e){console.warn('ImageCapture falhou, usando frame do vídeo:',e);}
