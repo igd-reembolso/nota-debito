@@ -1867,11 +1867,31 @@ function renderAttachs(){
 }
 function rmAttach(i){attachs.splice(i,1);renderAttachs()}
 
+let previewList=null, previewIndex=0;
+
 async function previewAttach(arrName,i){
-  const a=(arrName==='editAttachs'?editAttachs:attachs)[i];
+  const list=arrName==='editAttachs'?editAttachs:attachs;
+  await mostrarPreviewComprovante(list,i);
+}
+
+// Ver anexo direto pelo card da despesa já lançada, sem precisar abrir editar.
+async function previewDespesaAttach(despesaId,i){
+  const d=S.despesas.find(x=>x.id===despesaId);
+  if(!d||!d.attachs)return;
+  await mostrarPreviewComprovante(d.attachs,i);
+}
+
+async function mostrarPreviewComprovante(list,i){
+  const a=list&&list[i];
   if(!a)return;
+  previewList=list; previewIndex=i;
+
   const body=document.getElementById('preview-body');
   document.getElementById('preview-title').textContent=a.name||'Comprovante';
+  const nav=document.getElementById('preview-nav');
+  if(nav) nav.style.display=list.length>1?'flex':'none';
+  const counter=document.getElementById('preview-counter');
+  if(counter) counter.textContent=(i+1)+' / '+list.length;
 
   if(!a.data){
     if(!a.driveId){alert('Comprovante ainda não carregado. Aguarde a sincronização e tente novamente.');return}
@@ -1903,6 +1923,13 @@ async function previewAttach(arrName,i){
   }else{
     body.innerHTML=`<img src="${a.data}" style="max-width:100%;max-height:78vh;border-radius:var(--radius-sm)" />`;
   }
+}
+
+function avancarPreview(delta){
+  if(!previewList)return;
+  const novo=previewIndex+delta;
+  if(novo<0||novo>=previewList.length)return;
+  mostrarPreviewComprovante(previewList,novo);
 }
 
 function addDespesa(){
@@ -1976,7 +2003,7 @@ function renderDespesas(){
           <div>
             <span class="badge ${d.tipo==='transporte'?'b-transp':'b-alim'}">${d.tipo==='transporte'?'🚗 Transporte':'🍽️ Alimentação'}</span>
             ${d.nfLink?'<span class="badge b-nf">🔗 NF-e</span>':''}
-            ${d.attachs&&d.attachs.length?'<span class="badge b-foto">📎 '+d.attachs.length+'</span>':''}
+            ${d.attachs&&d.attachs.length?`<span class="badge b-foto" style="cursor:pointer" onclick="previewDespesaAttach(${d.id},0)">📎 ${d.attachs.length}</span>`:''}
           </div>
         </div>
         <div class="exp-val">${fv(d.valor)}</div>
@@ -3591,6 +3618,11 @@ initGoogle();
     <button class="modal-close" onclick="closeModal('modal-preview')">✕</button>
     <h2 id="preview-title" style="font-size:14px;word-break:break-all"></h2>
     <div id="preview-body"></div>
+    <div id="preview-nav" style="display:none;align-items:center;justify-content:center;gap:16px;margin-top:12px">
+      <button class="btn btn-sm" onclick="avancarPreview(-1)">‹ Anterior</button>
+      <span id="preview-counter" style="font-size:13px;color:var(--text2)"></span>
+      <button class="btn btn-sm" onclick="avancarPreview(1)">Próximo ›</button>
+    </div>
   </div>
 </div>
 
