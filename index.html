@@ -954,9 +954,33 @@ async function reenviarImagemCorrigida(driveId, base64){
 }
 
 // ── Salvar ────────────────────────────────────────────────────
-async function salvar(){
-  // Backup local imediato
+// salvar() é chamada em várias telas (adicionar/editar/mover/excluir despesa,
+// trocar de evento, etc.) sem esperar a anterior terminar. Cada chamada dispara
+// PATCHs no Drive que sobrescrevem o mesmo despesas.json — se duas rodassem em
+// paralelo, a resposta da mais antiga podia chegar DEPOIS da mais nova e
+// sobrescrever o Drive com dados desatualizados, apagando o que acabou de ser
+// salvo (sem precisar de nenhuma pasta duplicada pra isso acontecer). Essa fila
+// garante que só uma gravação no Drive roda por vez; chamadas que chegam
+// enquanto uma já está em andamento só marcam que precisa salvar de novo no final.
+let salvarEmAndamento=null;
+let salvarPendente=false;
+
+function salvar(){
+  // Backup local imediato — não espera a fila do Drive
   try{ localStorage.setItem('nd_main', JSON.stringify(S)); }catch(e){}
+  salvarPendente=true;
+  if(salvarEmAndamento) return salvarEmAndamento;
+  salvarEmAndamento=(async()=>{
+    while(salvarPendente){
+      salvarPendente=false;
+      await salvarUmaVez();
+    }
+    salvarEmAndamento=null;
+  })();
+  return salvarEmAndamento;
+}
+
+async function salvarUmaVez(){
   if(!accessToken || !rootFolderId){ atualizarStorageInfo(); return; }
 
   setSyncStatus('💾 salvando...');
