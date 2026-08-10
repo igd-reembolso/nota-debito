@@ -1845,18 +1845,42 @@ function renderAttachs(){
 }
 function rmAttach(i){attachs.splice(i,1);renderAttachs()}
 
-function previewAttach(arrName,i){
+async function previewAttach(arrName,i){
   const a=(arrName==='editAttachs'?editAttachs:attachs)[i];
   if(!a)return;
-  if(!a.data){alert('Comprovante ainda não carregado. Aguarde a sincronização e tente novamente.');return}
   const body=document.getElementById('preview-body');
+  document.getElementById('preview-title').textContent=a.name||'Comprovante';
+
+  if(!a.data){
+    if(!a.driveId){alert('Comprovante ainda não carregado. Aguarde a sincronização e tente novamente.');return}
+    // Baixa sob demanda em vez de depender da fila de sincronização em segundo
+    // plano (que baixa um comprovante de cada vez e podia demorar a chegar nesse).
+    body.innerHTML='<div style="padding:40px 0;color:var(--text2)">⏳ Carregando comprovante...</div>';
+    openModal('modal-preview');
+    try{
+      const res=await fetch(`https://www.googleapis.com/drive/v3/files/${a.driveId}?alt=media`,
+        {headers:{'Authorization':'Bearer '+accessToken}});
+      if(!res.ok) throw new Error('download falhou: '+res.status);
+      const blob=await res.blob();
+      a.data=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=ev=>resolve(ev.target.result);
+        reader.onerror=()=>reject(new Error('Erro ao ler arquivo'));
+        reader.readAsDataURL(blob);
+      });
+    }catch(e){
+      body.innerHTML='<div style="padding:40px 0;color:var(--text2)">⚠️ Não consegui carregar esse comprovante agora. Verifique a conexão e tente de novo.</div>';
+      return;
+    }
+  }else{
+    openModal('modal-preview');
+  }
+
   if(a.type.includes('pdf')){
     body.innerHTML=`<embed src="${a.data}" type="application/pdf" style="width:100%;height:75vh;border:none;border-radius:var(--radius-sm)" />`;
   }else{
     body.innerHTML=`<img src="${a.data}" style="max-width:100%;max-height:78vh;border-radius:var(--radius-sm)" />`;
   }
-  document.getElementById('preview-title').textContent=a.name||'Comprovante';
-  openModal('modal-preview');
 }
 
 function addDespesa(){
