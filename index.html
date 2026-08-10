@@ -441,6 +441,20 @@ let nfLink='';
 let attachs=[];
 let qrStream=null,qrInterval=null;
 let gerarEventoId='';
+let lastDespesaId=0;
+
+// Garante id único mesmo se duas despesas forem lançadas no mesmo milissegundo
+// (Date.now() sozinho já causou colisão, o que fazia editar/excluir uma despesa
+// acabar afetando outra que compartilhava o mesmo id).
+function novoDespesaId(){
+  let id=Date.now();
+  if(id<=lastDespesaId) id=lastDespesaId+1;
+  lastDespesaId=id;
+  return id;
+}
+function atualizarUltimoDespesaId(){
+  for(const d of S.despesas) if(d.id>lastDespesaId) lastDespesaId=d.id;
+}
 
 // ─── AUTH + STORAGE (Google Drive) ───────────────────────────
 const CLIENT_ID = '269633658350-e3arrtm0jcmihufe5rrcbaa3vhisgg60.apps.googleusercontent.com';
@@ -724,7 +738,7 @@ async function iniciarDrive(){
       console.error('Drive retry failed:', e2);
       setSyncStatus('⚠️ sem conexão', true);
       const ls=localStorage.getItem('nd_main');
-      if(ls) try{S={...S,...JSON.parse(ls)};}catch(e3){}
+      if(ls) try{S={...S,...JSON.parse(ls)};atualizarUltimoDespesaId();}catch(e3){}
       mostrarApp();
     }
   }
@@ -758,6 +772,7 @@ async function carregarTodasDespesas(){
       }
     }catch(e){ console.warn('Erro ao carregar despesas do evento:', ev.id, e); }
   }
+  atualizarUltimoDespesaId();
 }
 
 // Baixa as imagens em BACKGROUND, depois do app já estar visível
@@ -926,6 +941,7 @@ async function salvar(){
   if(!accessToken || !rootFolderId){ atualizarStorageInfo(); return; }
 
   setSyncStatus('💾 salvando...');
+  let algumErro=false;
   try{
     // 1. Salvar dados globais
     await salvarArquivo(globalFileId, {
@@ -937,27 +953,49 @@ async function salvar(){
     });
 
     // 2. Salvar despesas por evento (pasta de cada evento)
-    const eventoIds = [...new Set(S.despesas.map(d=>d.eventoId))];
-    for(const evId of eventoIds){
+    // Percorre TODOS os eventos, não só os que têm despesa localmente agora —
+    // senão, apagar a última despesa de um evento nunca reescreve o despesas.json
+    // dele no Drive, e o arquivo antigo (não vazio) volta a aparecer num carregamento futuro.
+    for(const ev of S.eventos){
+      const evId=ev.id;
       try{
         const fid = await getEventoFolderId(evId);
-        if(!fid) continue;
+        if(!fid){ algumErro=true; continue; }
         const despEvento = S.despesas.filter(d=>d.eventoId===evId);
         // Salvar imagens no Drive e substituir data por link
         const despParaSalvar = await processarComprovantes(despEvento, fid);
         // Buscar ou criar despesas.json
         const despFileId = await buscarOuCriarArquivo('despesas.json', fid, []);
         await salvarArquivo(despFileId, despParaSalvar);
-      }catch(e){ console.warn('Erro ao salvar evento:', evId, e); }
+      }catch(e){ console.warn('Erro ao salvar evento:', evId, e); algumErro=true; }
     }
 
-    const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    setSyncStatus('✓ salvo às '+agora);
+    if(algumErro){
+      // Uma ou mais despesas não sincronizaram — deixa isso visível (antes o app
+      // dizia "✓ salvo" mesmo quando uma gravação no Drive falhava em silêncio,
+      // e a despesa nova sumia na próxima vez que os dados eram recarregados do Drive)
+      // e agenda nova tentativa automática.
+      setSyncStatus('⚠️ algumas despesas não sincronizaram, tentando de novo...', true);
+      agendarNovaTentativaSalvar();
+    } else {
+      const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      setSyncStatus('✓ salvo às '+agora);
+    }
   }catch(e){
     console.error('Salvar error:', e);
     setSyncStatus('⚠️ salvo localmente', true);
+    agendarNovaTentativaSalvar();
   }
   atualizarStorageInfo();
+}
+
+let retrySalvarTimer=null;
+function agendarNovaTentativaSalvar(){
+  if(retrySalvarTimer) return;
+  retrySalvarTimer=setTimeout(()=>{
+    retrySalvarTimer=null;
+    salvar();
+  }, 15000);
 }
 
 async function processarComprovantes(despesas, eventoFolderId){
@@ -1840,7 +1878,7 @@ function addDespesa(){
   const desc='Reembolso '+label+'\nDia '+diaAtivo+' — '+local;
 
   S.despesas.push({
-    id:Date.now(),eventoId:S.eventoAtivo,desc,data,valor,tipo,
+    id:novoDespesaId(),eventoId:S.eventoAtivo,desc,data,valor,tipo,
     diaAtivo,
     nfLink,
     attachs:attachs.map(a=>({name:a.name,type:a.type,data:a.data}))
