@@ -748,9 +748,28 @@ async function getEventoFolderId(eventoId){
   if(eventoFolderCache[eventoId]) return eventoFolderCache[eventoId];
   const ev = S.eventos.find(e=>e.id===eventoId);
   if(!ev) return null;
+
+  // Se já sabemos o ID real da pasta no Drive, usa direto — sem isso, toda sessão
+  // reconsultava a pasta pelo NOME, e a consistência eventual do Drive (uma pasta
+  // recém-criada às vezes ainda não aparece na busca) podia fazer o app criar uma
+  // pasta duplicada e gravar despesas/fotos ali; na sessão seguinte a busca resolvia
+  // pra outra pasta (a mais antiga das duas) e o que foi salvo na duplicada "sumia".
+  // Fixando o ID uma vez descoberto, essa busca por nome deixa de rodar de novo.
+  if(ev.driveFolderId){
+    try{
+      const check = await driveReq('GET',
+        `https://www.googleapis.com/drive/v3/files/${ev.driveFolderId}?fields=id,trashed`);
+      if(check && check.id && !check.trashed){
+        eventoFolderCache[eventoId] = ev.driveFolderId;
+        return ev.driveFolderId;
+      }
+    }catch(e){ /* pasta não existe/foi apagada — recria abaixo */ }
+  }
+
   const nomePasta = (ev.nome + (ev.cidade?' — '+ev.cidade:'')).replace(/[/\\?%*:|"<>]/g,'');
   const fid = await buscarOuCriarPasta(nomePasta, rootFolderId);
   eventoFolderCache[eventoId] = fid;
+  ev.driveFolderId = fid;
   return fid;
 }
 
@@ -943,16 +962,10 @@ async function salvar(){
   setSyncStatus('💾 salvando...');
   let algumErro=false;
   try{
-    // 1. Salvar dados globais
-    await salvarArquivo(globalFileId, {
-      eventos: S.eventos,
-      notaCounter: S.notaCounter,
-      prestador: S.prestador,
-      tomadores: S.tomadores,
-      eventoAtivo: S.eventoAtivo
-    });
-
-    // 2. Salvar despesas por evento (pasta de cada evento)
+    // 1. Salvar despesas por evento (pasta de cada evento) — ANTES dos dados globais:
+    // é aqui que getEventoFolderId() pode descobrir/gravar ev.driveFolderId pela
+    // primeira vez, e queremos que esse ID já vá junto no salvamento do arquivo
+    // global logo abaixo, em vez de só na próxima vez que salvar() rodar.
     // Percorre TODOS os eventos, não só os que têm despesa localmente agora —
     // senão, apagar a última despesa de um evento nunca reescreve o despesas.json
     // dele no Drive, e o arquivo antigo (não vazio) volta a aparecer num carregamento futuro.
@@ -969,6 +982,15 @@ async function salvar(){
         await salvarArquivo(despFileId, despParaSalvar);
       }catch(e){ console.warn('Erro ao salvar evento:', evId, e); algumErro=true; }
     }
+
+    // 2. Salvar dados globais (já com eventos.driveFolderId atualizado, se for o caso)
+    await salvarArquivo(globalFileId, {
+      eventos: S.eventos,
+      notaCounter: S.notaCounter,
+      prestador: S.prestador,
+      tomadores: S.tomadores,
+      eventoAtivo: S.eventoAtivo
+    });
 
     if(algumErro){
       // Uma ou mais despesas não sincronizaram — deixa isso visível (antes o app
