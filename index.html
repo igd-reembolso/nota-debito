@@ -290,7 +290,7 @@ textarea{resize:vertical;min-height:68px}
   <div class="hdr">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div>
-        <h1>📄 Reembolso IGD</h1>
+        <h1><img id="hdr-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" style="width:22px;height:22px;border-radius:6px;vertical-align:-5px;margin-right:6px" /> Reembolso IGD</h1>
         <p id="hdr-user">Carregando...</p>
       </div>
       <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
@@ -299,7 +299,7 @@ textarea{resize:vertical;min-height:68px}
           <button class="btn-help" onclick="alternarTema()" id="btn-tema" title="Alternar tema" style="width:26px;height:26px;font-size:12px">🌙</button>
           <button class="btn-help" onclick="abrirAjuda()" title="Ajuda" style="width:26px;height:26px;font-size:12px">?</button>
         </div>
-        <button onclick="fazerLogout()" style="background:none;border:none;font-size:10.5px;color:var(--text3);cursor:pointer;padding:0">Sair</button>
+        <button onclick="fazerLogout()" style="background:none;border:none;font-size:10.5px;color:var(--text3);cursor:pointer;padding:0;margin-top:8px">Sair</button>
       </div>
     </div>
   </div>
@@ -1194,7 +1194,7 @@ function mostrarApp(){
   document.getElementById('main-app').style.display='flex';
   const hdrUser=document.getElementById('hdr-user');
   if(hdrUser && S.prestador && S.prestador.nome){
-    hdrUser.textContent=S.prestador.nome+(S.prestador.cnpj?' · '+S.prestador.cnpj:'');
+    hdrUser.textContent=S.prestador.nome;
   }
   initApp();
 }
@@ -3025,7 +3025,7 @@ function carregarPrestador(){
   const p=S.prestador;
   // Atualizar header
   const hdrUser = document.getElementById('hdr-user');
-  if(hdrUser && p.nome) hdrUser.textContent = p.nome + (p.cnpj?' · '+p.cnpj:'');
+  if(hdrUser && p.nome) hdrUser.textContent = p.nome;
   if(p.nome) document.getElementById('cfg-nome').textContent=p.nome;
   if(p.cnpj) document.getElementById('cfg-cnpj').textContent=p.cnpj;
   if(p.email) document.getElementById('cfg-email').textContent=p.email;
@@ -3566,6 +3566,12 @@ if('serviceWorker' in navigator){
     .then(()=>console.log('SW registrado'))
     .catch(e=>console.warn('SW erro:',e));
 }
+
+// Usa o mesmo ícone do app (definido no <link rel="apple-touch-icon">) no
+// lugar do emoji genérico 📄 que tinha no cabeçalho.
+const hdrLogo=document.getElementById('hdr-logo');
+const touchIconEl=document.querySelector('link[rel="apple-touch-icon"]');
+if(hdrLogo&&touchIconEl) hdrLogo.src=touchIconEl.href;
 
 // O Google cuida do init — initApp é chamado após login
 initGoogle();
