@@ -1367,7 +1367,7 @@ function renderEventos(){
         </div>
         <div class="exp-actions" style="margin-top:10px">
           <button onclick="event.stopPropagation();editarEvento('${ev.id}')" title="Editar evento" aria-label="Editar evento"><svg class="icon"><use href="#i-pencil"/></svg></button>
-          <button onclick="event.stopPropagation();abrirFinalizarEvento('${ev.id}')" title="Finalizar evento" aria-label="Finalizar evento"><svg class="icon"><use href="#i-check-circle"/></svg></button>
+          <button class="tag-btn" onclick="event.stopPropagation();abrirFinalizarEvento('${ev.id}')" title="Finalizar evento" aria-label="Finalizar evento"><svg class="icon"><use href="#i-check-circle"/></svg>Finalizar</button>
         </div>
       </div>`;
     }).join('');
