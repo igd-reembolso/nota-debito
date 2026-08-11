@@ -2336,6 +2336,29 @@ async function garantirComprovantesCarregados(despesas, btn){
   }
 }
 
+// Reduz e recomprime a imagem antes de embutir no PDF -- fotos de câmera saem
+// em 8-12+ megapixels, muito além do que uma página A4 precisa pra ficar
+// legível. Isso rodava direto com a foto na resolução total, deixando o PDF
+// gigante. Não mexe no arquivo original salvo, só numa cópia pro PDF.
+function redimensionarImagemParaPDF(dataUrl, maxDim, quality){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width, h=img.height;
+      if(w>maxDim||h>maxDim){
+        const escala=maxDim/Math.max(w,h);
+        w=Math.round(w*escala); h=Math.round(h*escala);
+      }
+      const canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=()=>reject(new Error('Erro ao carregar imagem'));
+    img.src=dataUrl;
+  });
+}
+
 async function gerarPDFUnificado(){
   if(!gerarEventoId){alert('Selecione um evento.');return}
   const ev=S.eventos.find(e=>e.id===gerarEventoId);
@@ -2389,14 +2412,10 @@ async function gerarPDFUnificado(){
         if(!a.data) continue;
         try{
           if(a.type && a.type.startsWith('image/')){
-            // Imagem → página A4
-            let imgEmbed;
-            const base64 = a.data.split(',')[1].replace(/\s/g,'');
-            if(a.type.includes('png')){
-              imgEmbed = await pdfDoc.embedPng(base64);
-            } else {
-              imgEmbed = await pdfDoc.embedJpg(base64);
-            }
+            // Imagem → página A4 (reduzida/recomprimida, ver função acima)
+            const otimizada = await redimensionarImagemParaPDF(a.data, 1600, 0.78);
+            const base64 = otimizada.split(',')[1];
+            const imgEmbed = await pdfDoc.embedJpg(base64);
             const page = pdfDoc.addPage([595, 842]);
             const pw = page.getWidth(), ph = page.getHeight();
             const iw = imgEmbed.width, ih = imgEmbed.height;
