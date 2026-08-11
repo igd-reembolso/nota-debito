@@ -219,7 +219,7 @@ textarea{resize:vertical;min-height:68px}
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
 <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 9.5h16M8 3.5v3M16 3.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.6A1.5 1.5 0 0 1 9.8 4.6h4.4a1.5 1.5 0 0 1 1.3.8L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
-<symbol id="i-image" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="9" cy="10" r="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 17l4.5-4.5 3 3 3.2-3.2L19 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3v4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.5 12.5h5M9.5 16h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
 <symbol id="i-cal-tab" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 9.5h18M8 3v3M16 3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="14" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1.1" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="4" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.3" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11.5M7.5 12l4.5 4.5 4.5-4.5M5 20h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -363,8 +363,8 @@ textarea{resize:vertical;min-height:68px}
         <p>Câmera</p>
       </div>
       <div class="drop" onclick="document.getElementById('file-input').click()" style="margin-top:0">
-        <div class="di"><svg class="icon"><use href="#i-image"/></svg></div>
-        <p>Galeria</p>
+        <div class="di"><svg class="icon"><use href="#i-file"/></svg></div>
+        <p>Arquivo</p>
       </div>
       <div class="drop" onclick="iniciarQR()" id="qr-area" style="margin-top:0">
         <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div>
@@ -3301,7 +3301,7 @@ const TOUR_STEPS = [
   },
   {
     title: '📎 4. Comprovantes',
-    desc: 'Tire foto com 📷 Câmera ou escolha da 📁 Galeria. PDFs do Uber/99 também são aceitos. Pode anexar vários por despesa.',
+    desc: 'Tire foto com 📷 Câmera ou escolha um 📄 Arquivo (foto salva ou PDF do Uber/99). Pode anexar vários por despesa.',
     tab: 'lancar', selector: '#file-camera'
   },
   {
@@ -3722,7 +3722,7 @@ initGoogle();
         <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div><p>Câmera</p>
       </div>
       <div class="drop" onclick="document.getElementById('edit-file-input').click()" style="margin-top:0">
-        <div class="di"><svg class="icon"><use href="#i-image"/></svg></div><p>Galeria</p>
+        <div class="di"><svg class="icon"><use href="#i-file"/></svg></div><p>Arquivo</p>
       </div>
       <div class="drop" onclick="iniciarQR('editar')" id="edit-qr-area" style="margin-top:0">
         <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div><p>QR NF-e</p>
