@@ -216,6 +216,8 @@ textarea{resize:vertical;min-height:68px}
 <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l.9-3.6L15.6 5.7a1.5 1.5 0 0 1 2.1 0l.6.6a1.5 1.5 0 0 1 0 2.1L7.6 19.1 4 20Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M13.8 7.5l2.7 2.7" stroke="currentColor" stroke-width="1.6"/></symbol>
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7M7 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h5.4a1.5 1.5 0 0 0 1.5-1.4L17 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.3 10.5v6M13.7 10.5v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
 <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-archive" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="5" rx="1.3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 13h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+<symbol id="i-restore" viewBox="0 0 24 24"><path d="M4 4v6h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 13.5A8 8 0 1 0 6 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
 <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
 <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 9.5h16M8 3.5v3M16 3.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
@@ -320,6 +322,7 @@ textarea{resize:vertical;min-height:68px}
     </div>
     <div class="slabel" style="margin-top:0">Eventos cadastrados</div>
     <div id="eventos-list"></div>
+    <div id="eventos-arquivados" style="margin-top:8px"></div>
   </div>
 
   <!-- LANÇAR -->
@@ -1334,35 +1337,79 @@ function go(s){
 function renderTudo(){renderEventos();renderEventoAtivo();renderDespesas();}
 
 // ─── EVENTOS ──────────────────────────────────────────────────
+let arquivadosAbertos=false;
+
 function renderEventos(){
   const el=document.getElementById('eventos-list');
-  if(!S.eventos.length){
-    el.innerHTML='<div class="empty"><span class="ei">📅</span>Nenhum evento cadastrado.<br>Crie um para começar!</div>';
-    return;
+  const arqEl=document.getElementById('eventos-arquivados');
+  const ativos=S.eventos.filter(ev=>!ev.arquivado);
+  const arquivados=S.eventos.filter(ev=>ev.arquivado);
+
+  if(!ativos.length){
+    el.innerHTML=arquivados.length?'':'<div class="empty"><span class="ei">📅</span>Nenhum evento cadastrado.<br>Crie um para começar!</div>';
+  } else {
+    el.innerHTML=ativos.map(ev=>{
+      const desp=S.despesas.filter(d=>d.eventoId===ev.id);
+      const total=desp.reduce((s,d)=>s+d.valor,0);
+      const isAtivo=ev.id===S.eventoAtivo;
+      return`<div class="ev-card${isAtivo?' selected':''}" onclick="selecionarEvento('${ev.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div style="flex:1;min-width:0">
+            <div class="ev-title">${ev.nome}${ev.cidade?' | '+ev.cidade:''}</div>
+            <span class="ev-tomador">${ev.tomador}</span>
+            <div class="ev-sub">${fd(ev.inicio)}${ev.fim&&ev.fim!==ev.inicio?' → '+fd(ev.fim):''}</div>
+          </div>
+          <div class="ev-stat">
+            ${desp.length
+              ?`<div class="v">${fv(total)}</div><div class="n">${desp.length} despesa(s)</div>`
+              :`<div class="n">Sem despesas ainda</div>`}
+          </div>
+        </div>
+        <div class="exp-actions" style="margin-top:10px">
+          <button onclick="event.stopPropagation();editarEvento('${ev.id}')" title="Editar evento" aria-label="Editar evento"><svg class="icon"><use href="#i-pencil"/></svg></button>
+          <button onclick="event.stopPropagation();abrirFinalizarEvento('${ev.id}')" title="Finalizar evento" aria-label="Finalizar evento"><svg class="icon"><use href="#i-check-circle"/></svg></button>
+        </div>
+      </div>`;
+    }).join('');
   }
-  el.innerHTML=S.eventos.map(ev=>{
-    const desp=S.despesas.filter(d=>d.eventoId===ev.id);
-    const total=desp.reduce((s,d)=>s+d.valor,0);
-    const isAtivo=ev.id===S.eventoAtivo;
-    return`<div class="ev-card${isAtivo?' selected':''}" onclick="selecionarEvento('${ev.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-        <div style="flex:1;min-width:0">
-          <div class="ev-title">${ev.nome}${ev.cidade?' | '+ev.cidade:''}</div>
-          <span class="ev-tomador">${ev.tomador}</span>
-          <div class="ev-sub">${fd(ev.inicio)}${ev.fim&&ev.fim!==ev.inicio?' → '+fd(ev.fim):''}</div>
-        </div>
-        <div class="ev-stat">
-          ${desp.length
-            ?`<div class="v">${fv(total)}</div><div class="n">${desp.length} despesa(s)</div>`
-            :`<div class="n">Sem despesas ainda</div>`}
-        </div>
-      </div>
-      <div class="exp-actions" style="margin-top:10px">
-        <button onclick="event.stopPropagation();editarEvento('${ev.id}')" title="Editar evento" aria-label="Editar evento"><svg class="icon"><use href="#i-pencil"/></svg></button>
-        <button onclick="event.stopPropagation();concluirEvento('${ev.id}')" title="Finalizar evento" aria-label="Finalizar evento"><svg class="icon"><use href="#i-check-circle"/></svg></button>
-      </div>
+
+  if(!arqEl)return;
+  if(!arquivados.length){ arqEl.innerHTML=''; return; }
+  arqEl.innerHTML=`
+    <div class="slabel" style="cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none" onclick="toggleArquivados()">
+      <svg class="icon" style="width:11px;height:11px;transform:rotate(${arquivadosAbertos?180:90}deg)"><use href="#i-chevron"/></svg>
+      Arquivados (${arquivados.length})
+    </div>
+    <div style="display:${arquivadosAbertos?'block':'none'}">
+      ${arquivados.map(ev=>{
+        const desp=S.despesas.filter(d=>d.eventoId===ev.id);
+        const total=desp.reduce((s,d)=>s+d.valor,0);
+        return`<div class="ev-card" style="cursor:default;opacity:.75">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div class="ev-title">${ev.nome}${ev.cidade?' | '+ev.cidade:''}</div>
+              <span class="ev-tomador">${ev.tomador}</span>
+              <div class="ev-sub">${fd(ev.inicio)}${ev.fim&&ev.fim!==ev.inicio?' → '+fd(ev.fim):''}</div>
+            </div>
+            <div class="ev-stat">
+              ${desp.length
+                ?`<div class="v">${fv(total)}</div><div class="n">${desp.length} despesa(s)</div>`
+                :`<div class="n">Sem despesas</div>`}
+            </div>
+          </div>
+          <div class="exp-actions" style="margin-top:10px">
+            <button class="tag-btn" onclick="desarquivarEvento('${ev.id}')" title="Desarquivar"><svg class="icon"><use href="#i-restore"/></svg>Desarquivar</button>
+            <div class="spacer"></div>
+            <button class="danger" onclick="deletarEvento('${ev.id}')" title="Excluir" aria-label="Excluir"><svg class="icon"><use href="#i-trash"/></svg></button>
+          </div>
+        </div>`;
+      }).join('')}
     </div>`;
-  }).join('');
+}
+
+function toggleArquivados(){
+  arquivadosAbertos=!arquivadosAbertos;
+  renderEventos();
 }
 
 function selecionarEvento(id){
@@ -1526,6 +1573,56 @@ function excluirEventoModal(){
   if(id&&deletarEvento(id)) closeModal('modal-evento');
 }
 
+// Toque no ✅ do card abre o modal de escolha (arquivar ou apagar tudo) em
+// vez de ir direto pra exclusão -- "finalizar" antes só significava "apagar
+// pra sempre", o que não era óbvio pelo nome do botão.
+let finalizarEventoId=null;
+
+function abrirFinalizarEvento(id){
+  const ev=S.eventos.find(e=>e.id===id);
+  if(!ev)return;
+  finalizarEventoId=id;
+  const desp=S.despesas.filter(d=>d.eventoId===id);
+  const total=desp.reduce((s,d)=>s+d.valor,0);
+  document.getElementById('finalizar-info').innerHTML=
+    `<b>${nomeEvento(ev)}</b><br>${desp.length} despesa(s)${desp.length?' · '+fv(total):''}`;
+  openModal('modal-finalizar');
+}
+
+function arquivarEventoConfirm(){
+  if(!finalizarEventoId)return;
+  arquivarEvento(finalizarEventoId);
+  closeModal('modal-finalizar');
+  finalizarEventoId=null;
+}
+
+function apagarEventoConfirm(){
+  if(!finalizarEventoId)return;
+  const id=finalizarEventoId;
+  closeModal('modal-finalizar');
+  finalizarEventoId=null;
+  concluirEvento(id);
+}
+
+function arquivarEvento(id){
+  const ev=S.eventos.find(e=>e.id===id);
+  if(!ev)return;
+  ev.arquivado=true;
+  if(S.eventoAtivo===id)S.eventoAtivo='';
+  salvar();
+  renderEventos();
+  mostrarToast('🗄️ Evento arquivado','ok');
+}
+
+function desarquivarEvento(id){
+  const ev=S.eventos.find(e=>e.id===id);
+  if(!ev)return;
+  delete ev.arquivado;
+  salvar();
+  renderEventos();
+  mostrarToast('✅ Evento desarquivado','ok');
+}
+
 function concluirEvento(id){
   const ev=S.eventos.find(e=>e.id===id);
   if(!ev)return;
@@ -1534,10 +1631,8 @@ function concluirEvento(id){
   const nome=nomeEvento(ev);
 
   const confirmMsg=
-    `✅ Marcar "${nome}" como concluído?
+    `⚠️ ATENÇÃO: isso vai DELETAR permanentemente "${nome}":
 
-`+
-    `⚠️ ATENÇÃO: Esta ação vai DELETAR permanentemente:
 `+
     `• ${desp.length} despesa(s) · ${fv(total)}
 `+
@@ -1559,7 +1654,7 @@ function concluirEvento(id){
   if(S.eventoAtivo===id)S.eventoAtivo='';
   salvar();
   renderEventos();
-  mostrarToast('✅ Evento concluído e removido!','ok');
+  mostrarToast('🗑️ Evento e despesas apagados','ok');
   return true;
 }
 
@@ -2225,7 +2320,7 @@ function delDespesa(id){
 function renderGerar(){
   if(!gerarEventoId&&S.eventoAtivo)gerarEventoId=S.eventoAtivo;
   const sel=document.getElementById('gerar-evento-sel');
-  sel.innerHTML=S.eventos.map(ev=>{
+  sel.innerHTML=S.eventos.filter(ev=>!ev.arquivado).map(ev=>{
     const desp=S.despesas.filter(d=>d.eventoId===ev.id);
     const isSel=ev.id===gerarEventoId;
     return`<div class="ev-card${isSel?' selected':''}" onclick="selecionarGerarEvento('${ev.id}')">
@@ -3640,6 +3735,21 @@ initGoogle();
     <div id="ev-danger-zone" style="display:none;margin-top:20px;padding-top:16px;border-top:.5px solid var(--border)">
       <button class="btn btn-danger mt8" onclick="excluirEventoModal()">🗑️ Excluir evento</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL FINALIZAR EVENTO (arquivar ou apagar) -->
+<div class="modal-overlay" id="modal-finalizar">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-finalizar')">✕</button>
+    <h2>Finalizar evento</h2>
+    <p id="finalizar-info" style="font-size:14px;color:var(--text);margin-bottom:20px;line-height:1.5"></p>
+
+    <button class="btn btn-primary" onclick="arquivarEventoConfirm()"><svg class="icon" style="width:16px;height:16px"><use href="#i-archive"/></svg> Arquivar</button>
+    <p style="font-size:12px;color:var(--text2);text-align:center;margin:6px 0 20px">Some da lista principal, mas despesas e comprovantes continuam salvos — dá pra desarquivar depois.</p>
+
+    <button class="btn btn-danger" onclick="apagarEventoConfirm()"><svg class="icon" style="width:16px;height:16px"><use href="#i-trash"/></svg> Apagar tudo permanentemente</button>
+    <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:6px">Exclui o evento, despesas e comprovantes. Não pode ser desfeito.</p>
   </div>
 </div>
 
