@@ -229,6 +229,7 @@ textarea{resize:vertical;min-height:68px}
 <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11.5M7.5 12l4.5 4.5 4.5-4.5M5 20h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 3.5v2.3M12 18.2v2.3M20.5 12h-2.3M5.8 12H3.5M17.7 6.3l-1.6 1.6M7.9 16.1l-1.6 1.6M17.7 17.7l-1.6-1.6M7.9 7.9 6.3 6.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
 <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 7l7.5 6 7.5-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="6" y="6" width="2" height="2" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="16" y="6" width="2" height="2" fill="currentColor"/><rect x="3" y="13" width="8" height="8" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="6" y="16" width="2" height="2" fill="currentColor"/><rect x="14" y="14" width="3" height="3" fill="currentColor"/><rect x="19" y="14" width="2" height="2" fill="currentColor"/><rect x="14" y="19" width="2" height="2" fill="currentColor"/><rect x="18" y="18" width="3" height="3" fill="currentColor"/></symbol>
 <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V8.5M7.5 12l4.5-4.5 4.5 4.5M5 4h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </defs>
 </svg>
@@ -377,7 +378,7 @@ textarea{resize:vertical;min-height:68px}
 
     <div id="nf-input-row" style="display:flex;gap:8px;margin-top:8px">
       <button onclick="iniciarQR()" id="qr-area" title="Escanear QR code da NF-e" class="qr-btn">
-        <svg class="icon"><use href="#i-camera"/></svg>
+        <svg class="icon"><use href="#i-qr"/></svg>
       </button>
       <input type="text" id="qr-manual" placeholder="Ou cole o link da NF-e aqui" style="flex:1" oninput="setNFManual(this.value)" />
     </div>
@@ -3742,7 +3743,7 @@ initGoogle();
 
     <div id="edit-nf-input-row" style="display:flex;gap:8px;margin-top:8px">
       <button onclick="iniciarQR('editar')" id="edit-qr-area" title="Escanear QR code da NF-e" class="qr-btn">
-        <svg class="icon"><use href="#i-camera"/></svg>
+        <svg class="icon"><use href="#i-qr"/></svg>
       </button>
       <input type="text" id="edit-nf-manual" placeholder="Ou cole o link da NF-e aqui" style="flex:1" oninput="setEditNFManual(this.value)" />
     </div>
