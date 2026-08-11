@@ -57,8 +57,8 @@ label{font-size:13px;color:var(--text2);display:block;margin:12px 0 4px}
 label:first-child{margin-top:0}
 select,input[type=text],input[type=number],input[type=date],textarea{
   width:100%;padding:11px 13px;font-size:15px;font-family:inherit;
-  border:.5px solid var(--border2);border-radius:var(--radius-sm);
-  background:var(--bg);color:var(--text);outline:none;
+  border:1px solid var(--border2);border-radius:var(--radius-sm);
+  background:var(--bg2);color:var(--text);outline:none;
   -webkit-appearance:none;appearance:none
 }
 select:focus,input:focus,textarea:focus{border-color:var(--primary)}
@@ -339,7 +339,10 @@ textarea{resize:vertical;min-height:68px}
       <div id="desc-preview" style="font-size:14px;color:var(--text);line-height:1.5;font-weight:500"></div>
     </div>
 
-    <input type="date" id="data" onchange="calcularDiaAuto()" style="margin-top:16px" />
+    <div style="position:relative;margin-top:16px">
+      <svg class="icon" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text2);pointer-events:none"><use href="#i-cal"/></svg>
+      <input type="date" id="data" onchange="calcularDiaAuto()" style="text-align:center;padding-left:40px;padding-right:40px" />
+    </div>
     <div id="dia-calculado" style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;margin-top:4px;display:none">
       📅 <span id="dia-calculado-texto"></span>
     </div>
@@ -3740,7 +3743,10 @@ initGoogle();
     </div>
 
     <label>Data</label>
-    <input type="date" id="edit-data" />
+    <div style="position:relative">
+      <svg class="icon" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text2);pointer-events:none"><use href="#i-cal"/></svg>
+      <input type="date" id="edit-data" style="text-align:center;padding-left:40px;padding-right:40px" />
+    </div>
 
     <label>Valor (R$)</label>
     <input type="text" id="edit-valor" inputmode="numeric" oninput="mascaraValor(this)"
