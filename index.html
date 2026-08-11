@@ -97,6 +97,10 @@ textarea{resize:vertical;min-height:68px}
 .drop .di svg{width:28px;height:28px;margin:0 auto;color:var(--primary)}
 .drop p{font-size:13px;color:var(--text2);margin-top:5px;line-height:1.4}
 
+.qr-btn{flex-shrink:0;width:46px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2)}
+.qr-btn:active{background:var(--bg3)}
+.qr-btn .icon{width:18px;height:18px}
+
 .thumb{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:var(--radius-sm);padding:9px 12px;margin-top:6px;font-size:13px}
 .thumb .tc{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
 .thumb .ti{font-size:20px}
@@ -357,7 +361,7 @@ textarea{resize:vertical;min-height:68px}
 
     <div class="slabel" style="margin:16px 0 8px">Nota fiscal / comprovante</div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
       <div class="drop" onclick="document.getElementById('file-camera').click()" style="margin-top:0">
         <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div>
         <p>Câmera</p>
@@ -366,21 +370,22 @@ textarea{resize:vertical;min-height:68px}
         <div class="di"><svg class="icon"><use href="#i-file"/></svg></div>
         <p>Arquivo</p>
       </div>
-      <div class="drop" onclick="iniciarQR()" id="qr-area" style="margin-top:0">
-        <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div>
-        <p>QR NF-e</p>
-      </div>
     </div>
     <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none" onchange="attachFile(event)" />
     <input type="file" id="file-input" accept="image/*,application/pdf" style="display:none" onchange="attachFile(event)" />
     <div id="attach-list"></div>
 
+    <div id="nf-input-row" style="display:flex;gap:8px;margin-top:8px">
+      <button onclick="iniciarQR()" id="qr-area" title="Escanear QR code da NF-e" class="qr-btn">
+        <svg class="icon"><use href="#i-camera"/></svg>
+      </button>
+      <input type="text" id="qr-manual" placeholder="Ou cole o link da NF-e aqui" style="flex:1" oninput="setNFManual(this.value)" />
+    </div>
     <div id="nf-show" style="display:none" class="thumb">
       <span class="ti">🔗</span>
       <span class="tn" id="nf-text"></span>
       <button class="tr" onclick="clearNF()">✕</button>
     </div>
-    <input type="text" id="qr-manual" placeholder="Ou cole o link da NF-e aqui" style="margin-top:8px" oninput="setNFManual(this.value)" />
 
     <button class="btn btn-primary mt16" onclick="addDespesa()">➕ Adicionar despesa</button>
     <div id="add-msg"></div>
@@ -1979,13 +1984,13 @@ function setNF(link){
   nfLink=link;
   document.getElementById('nf-text').textContent=link;
   document.getElementById('nf-show').style.display='flex';
-  document.getElementById('qr-area').style.display='none';
+  document.getElementById('nf-input-row').style.display='none';
   document.getElementById('qr-manual').value='';
 }
 function clearNF(){
   nfLink='';
   document.getElementById('nf-show').style.display='none';
-  document.getElementById('qr-area').style.display='block';
+  document.getElementById('nf-input-row').style.display='flex';
   document.getElementById('qr-manual').value='';
 }
 
@@ -3095,11 +3100,11 @@ function editarDespesa(id){
   if(editNFLink){
     document.getElementById('edit-nf-text').textContent=editNFLink;
     document.getElementById('edit-nf-show').style.display='flex';
-    document.getElementById('edit-qr-area').style.display='none';
+    document.getElementById('edit-nf-input-row').style.display='none';
     document.getElementById('edit-nf-manual').value='';
   } else {
     document.getElementById('edit-nf-show').style.display='none';
-    document.getElementById('edit-qr-area').style.display='block';
+    document.getElementById('edit-nf-input-row').style.display='flex';
     document.getElementById('edit-nf-manual').value='';
   }
 
@@ -3158,13 +3163,13 @@ function setEditNF(link){
   editNFLink=link;
   document.getElementById('edit-nf-text').textContent=editNFLink;
   document.getElementById('edit-nf-show').style.display='flex';
-  document.getElementById('edit-qr-area').style.display='none';
+  document.getElementById('edit-nf-input-row').style.display='none';
   document.getElementById('edit-nf-manual').value='';
 }
 function clearEditNF(){
   editNFLink='';
   document.getElementById('edit-nf-show').style.display='none';
-  document.getElementById('edit-qr-area').style.display='block';
+  document.getElementById('edit-nf-input-row').style.display='flex';
   document.getElementById('edit-nf-manual').value='';
 }
 
@@ -3723,27 +3728,29 @@ initGoogle();
       style="margin-top:12px;font-size:28px;font-weight:700;text-align:center;padding:14px;font-family:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Consolas,monospace;font-variant-numeric:tabular-nums" />
 
     <div class="slabel" style="margin:16px 0 8px">Nota fiscal / comprovante</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="drop" onclick="document.getElementById('edit-file-camera').click()" style="margin-top:0">
         <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div><p>Câmera</p>
       </div>
       <div class="drop" onclick="document.getElementById('edit-file-input').click()" style="margin-top:0">
         <div class="di"><svg class="icon"><use href="#i-file"/></svg></div><p>Arquivo</p>
       </div>
-      <div class="drop" onclick="iniciarQR('editar')" id="edit-qr-area" style="margin-top:0">
-        <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div><p>QR NF-e</p>
-      </div>
     </div>
     <input type="file" id="edit-file-camera" accept="image/*" capture="environment" style="display:none" onchange="editAttachFile(event)" />
     <input type="file" id="edit-file-input" accept="image/*,application/pdf" style="display:none" onchange="editAttachFile(event)" />
     <div id="edit-attach-list"></div>
 
+    <div id="edit-nf-input-row" style="display:flex;gap:8px;margin-top:8px">
+      <button onclick="iniciarQR('editar')" id="edit-qr-area" title="Escanear QR code da NF-e" class="qr-btn">
+        <svg class="icon"><use href="#i-camera"/></svg>
+      </button>
+      <input type="text" id="edit-nf-manual" placeholder="Ou cole o link da NF-e aqui" style="flex:1" oninput="setEditNFManual(this.value)" />
+    </div>
     <div id="edit-nf-show" style="display:none" class="thumb">
       <span class="ti">🔗</span>
       <span class="tn" id="edit-nf-text"></span>
       <button class="tr" onclick="clearEditNF()">✕</button>
     </div>
-    <input type="text" id="edit-nf-manual" placeholder="Ou cole o link da NF-e aqui" style="margin-top:8px" oninput="setEditNFManual(this.value)" />
 
     <button class="btn btn-primary mt16" onclick="salvarEdicao()">💾 Salvar alterações</button>
   </div>
