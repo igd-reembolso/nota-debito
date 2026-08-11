@@ -322,7 +322,7 @@ textarea{resize:vertical;min-height:68px}
     <h2 class="screen-title">Nova despesa</h2>
     <div id="evento-ativo-info"></div>
 
-    <div class="slabel">Tipo de despesa</div>
+    <div class="slabel">Tipo</div>
     <div class="tipo-grid" style="grid-template-columns:1fr 1fr 1fr">
       <button class="tipo-btn sel" id="btn-transp" onclick="setTipo('transporte')"><svg class="icon" style="width:16px;height:16px"><use href="#i-car"/></svg> Transporte</button>
       <button class="tipo-btn" id="btn-alim" onclick="setTipo('alimentacao')"><svg class="icon" style="width:16px;height:16px"><use href="#i-fork"/></svg> Alimentação</button>
@@ -339,15 +339,13 @@ textarea{resize:vertical;min-height:68px}
       <div id="desc-preview" style="font-size:14px;color:var(--text);line-height:1.5;font-weight:500"></div>
     </div>
 
-    <label>Data da despesa</label>
-    <input type="date" id="data" onchange="calcularDiaAuto()" />
+    <input type="date" id="data" onchange="calcularDiaAuto()" style="margin-top:16px" />
     <div id="dia-calculado" style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;margin-top:4px;display:none">
       📅 <span id="dia-calculado-texto"></span>
     </div>
 
-    <label>Valor (R$)</label>
     <input type="text" id="valor" placeholder="R$ 0,00" inputmode="numeric"
-      oninput="mascaraValor(this)" style="font-size:28px;font-weight:700;text-align:center;padding:16px;font-family:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Consolas,monospace;font-variant-numeric:tabular-nums" />
+      oninput="mascaraValor(this)" style="margin-top:16px;font-size:28px;font-weight:700;text-align:center;padding:16px;font-family:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Consolas,monospace;font-variant-numeric:tabular-nums" />
 
     <div class="slabel">Nota fiscal / comprovante</div>
 
@@ -1427,15 +1425,14 @@ function calcularDiaAuto(){
   const diff=Math.round((new Date(dataSel)-new Date(ev.inicio))/(1000*60*60*24));
   const dia=diff+1;
   if(dia<1){
+    // Só mostra essa caixa pro aviso de data inválida — o "Dia X" normal já
+    // aparece na descrição gerada logo acima, repetir aqui era redundante.
     el.style.display='block';
     txt.innerHTML='⚠️ Data anterior ao início do evento!';
     el.style.background='var(--red-bg)';
     el.style.color='var(--red)';
   } else {
-    el.style.display='block';
-    el.style.background='var(--bg2)';
-    el.style.color='var(--text)';
-    txt.innerHTML=`<b>Dia ${dia}</b> do evento`;
+    el.style.display='none';
   }
   diaAtivo=Math.max(1,dia);
   atualizarDesc();
