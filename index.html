@@ -344,7 +344,7 @@ textarea{resize:vertical;min-height:68px}
       <div id="desc-preview" style="font-size:14px;color:var(--text);line-height:1.5;font-weight:500"></div>
     </div>
 
-    <div style="position:relative;margin-top:16px">
+    <div style="position:relative;margin-top:12px">
       <svg class="icon" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text2);pointer-events:none"><use href="#i-cal"/></svg>
       <input type="date" id="data" onchange="calcularDiaAuto()" style="text-align:center;padding-left:40px;padding-right:40px" />
     </div>
@@ -353,28 +353,28 @@ textarea{resize:vertical;min-height:68px}
     </div>
 
     <input type="text" id="valor" placeholder="R$ 0,00" inputmode="numeric"
-      oninput="mascaraValor(this)" style="margin-top:16px;font-size:28px;font-weight:700;text-align:center;padding:16px;font-family:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Consolas,monospace;font-variant-numeric:tabular-nums" />
+      oninput="mascaraValor(this)" style="margin-top:12px;font-size:28px;font-weight:700;text-align:center;padding:14px;font-family:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Consolas,monospace;font-variant-numeric:tabular-nums" />
 
-    <div class="slabel">Nota fiscal / comprovante</div>
+    <div class="slabel" style="margin:16px 0 8px">Nota fiscal / comprovante</div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
       <div class="drop" onclick="document.getElementById('file-camera').click()" style="margin-top:0">
         <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div>
         <p>Câmera</p>
       </div>
       <div class="drop" onclick="document.getElementById('file-input').click()" style="margin-top:0">
         <div class="di"><svg class="icon"><use href="#i-image"/></svg></div>
-        <p>Galeria / PDF</p>
+        <p>Galeria</p>
+      </div>
+      <div class="drop" onclick="iniciarQR()" id="qr-area" style="margin-top:0">
+        <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div>
+        <p>QR NF-e</p>
       </div>
     </div>
     <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none" onchange="attachFile(event)" />
     <input type="file" id="file-input" accept="image/*,application/pdf" style="display:none" onchange="attachFile(event)" />
     <div id="attach-list"></div>
 
-    <div class="drop" onclick="iniciarQR()" id="qr-area" style="margin-top:8px">
-      <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div>
-      <p>Escanear QR code da NF-e<br><small>Toque para abrir a câmera</small></p>
-    </div>
     <div id="nf-show" style="display:none" class="thumb">
       <span class="ti">🔗</span>
       <span class="tn" id="nf-text"></span>
@@ -3742,40 +3742,36 @@ initGoogle();
       <div id="edit-desc-preview" style="font-size:14px;color:var(--text);line-height:1.5;font-weight:500"></div>
     </div>
 
-    <label>Data</label>
-    <div style="position:relative">
+    <div style="position:relative;margin-top:12px">
       <svg class="icon" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text2);pointer-events:none"><use href="#i-cal"/></svg>
       <input type="date" id="edit-data" style="text-align:center;padding-left:40px;padding-right:40px" />
     </div>
 
-    <label>Valor (R$)</label>
     <input type="text" id="edit-valor" inputmode="numeric" oninput="mascaraValor(this)"
-      style="font-size:28px;font-weight:700;text-align:center;padding:16px;font-family:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Consolas,monospace;font-variant-numeric:tabular-nums" />
+      style="margin-top:12px;font-size:28px;font-weight:700;text-align:center;padding:14px;font-family:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Consolas,monospace;font-variant-numeric:tabular-nums" />
 
-    <div class="slabel">Link NF-e</div>
-    <div class="drop" onclick="iniciarQR('editar')" id="edit-qr-area" style="margin-top:0">
-      <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div>
-      <p>Escanear QR code da NF-e<br><small>Toque para abrir a câmera</small></p>
+    <div class="slabel" style="margin:16px 0 8px">Nota fiscal / comprovante</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div class="drop" onclick="document.getElementById('edit-file-camera').click()" style="margin-top:0">
+        <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div><p>Câmera</p>
+      </div>
+      <div class="drop" onclick="document.getElementById('edit-file-input').click()" style="margin-top:0">
+        <div class="di"><svg class="icon"><use href="#i-image"/></svg></div><p>Galeria</p>
+      </div>
+      <div class="drop" onclick="iniciarQR('editar')" id="edit-qr-area" style="margin-top:0">
+        <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div><p>QR NF-e</p>
+      </div>
     </div>
+    <input type="file" id="edit-file-camera" accept="image/*" capture="environment" style="display:none" onchange="editAttachFile(event)" />
+    <input type="file" id="edit-file-input" accept="image/*,application/pdf" style="display:none" onchange="editAttachFile(event)" />
+    <div id="edit-attach-list"></div>
+
     <div id="edit-nf-show" style="display:none" class="thumb">
       <span class="ti">🔗</span>
       <span class="tn" id="edit-nf-text"></span>
       <button class="tr" onclick="clearEditNF()">✕</button>
     </div>
     <input type="text" id="edit-nf-manual" placeholder="Ou cole o link da NF-e aqui" style="margin-top:8px" oninput="setEditNFManual(this.value)" />
-
-    <div class="slabel">Comprovantes</div>
-    <div id="edit-attach-list"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-      <div class="drop" onclick="document.getElementById('edit-file-camera').click()" style="margin-top:0">
-        <div class="di"><svg class="icon"><use href="#i-camera"/></svg></div><p>Tirar foto</p>
-      </div>
-      <div class="drop" onclick="document.getElementById('edit-file-input').click()" style="margin-top:0">
-        <div class="di"><svg class="icon"><use href="#i-image"/></svg></div><p>Galeria / PDF</p>
-      </div>
-    </div>
-    <input type="file" id="edit-file-camera" accept="image/*" capture="environment" style="display:none" onchange="editAttachFile(event)" />
-    <input type="file" id="edit-file-input" accept="image/*,application/pdf" style="display:none" onchange="editAttachFile(event)" />
 
     <button class="btn btn-primary mt16" onclick="salvarEdicao()">💾 Salvar alterações</button>
   </div>
