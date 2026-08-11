@@ -26,11 +26,14 @@
   --purple-bg:#EEEDFE;--purple:#3C3489;
   --red:#A32D2D;--red-bg:#FCEBEB;
 }
+/* Cores semânticas (alerta/sucesso/erro/info/NF-e) só tinham a versão clara
+   definida — no escuro, essas caixas apareciam como retângulos pastel bem
+   claros cravados no meio da tela, destoando de tudo ao redor. */
 @media(prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){--bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;--border:#38383a;--border2:#545456;--primary:#e07a42;--primary-fg:#1b120c}
+  :root:not([data-theme="light"]){--bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;--border:#38383a;--border2:#545456;--primary:#e07a42;--primary-fg:#1b120c;--green-bg:#16261a;--green:#7cd992;--blue-bg:#142433;--blue:#7cb8e8;--amber-bg:#2e2210;--amber:#e3a83f;--purple-bg:#201c33;--purple:#b09ce8;--red:#e28080;--red-bg:#2e1717}
 }
-[data-theme="dark"]{--bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;--border:#38383a;--border2:#545456;--primary:#e07a42;--primary-fg:#1b120c}
-[data-theme="light"]{--bg:#fff;--bg2:#f6f6f6;--bg3:#ececec;--text:#111;--text2:#666;--text3:#999;--border:#ddd;--border2:#bbb;--primary:#c1571f;--primary-fg:#fff8f2}
+[data-theme="dark"]{--bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;--border:#38383a;--border2:#545456;--primary:#e07a42;--primary-fg:#1b120c;--green-bg:#16261a;--green:#7cd992;--blue-bg:#142433;--blue:#7cb8e8;--amber-bg:#2e2210;--amber:#e3a83f;--purple-bg:#201c33;--purple:#b09ce8;--red:#e28080;--red-bg:#2e1717}
+[data-theme="light"]{--bg:#fff;--bg2:#f6f6f6;--bg3:#ececec;--text:#111;--text2:#666;--text3:#999;--border:#ddd;--border2:#bbb;--primary:#c1571f;--primary-fg:#fff8f2;--green-bg:#EAF3DE;--green:#27500A;--blue-bg:#E6F1FB;--blue:#0C447C;--amber-bg:#FAEEDA;--amber:#633806;--purple-bg:#EEEDFE;--purple:#3C3489;--red:#A32D2D;--red-bg:#FCEBEB}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:16px;overscroll-behavior:none}
 .app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
 
@@ -221,6 +224,8 @@ textarea{resize:vertical;min-height:68px}
 <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="4" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.3" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11.5M7.5 12l4.5 4.5 4.5-4.5M5 20h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 3.5v2.3M12 18.2v2.3M20.5 12h-2.3M5.8 12H3.5M17.7 6.3l-1.6 1.6M7.9 16.1l-1.6 1.6M17.7 17.7l-1.6-1.6M7.9 7.9 6.3 6.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 7l7.5 6 7.5-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V8.5M7.5 12l4.5-4.5 4.5 4.5M5 4h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </defs>
 </svg>
 <!-- TELA DE LOGIN -->
@@ -390,7 +395,8 @@ textarea{resize:vertical;min-height:68px}
 
   <!-- GERAR -->
   <div id="screen-gerar" class="screen">
-    <div class="slabel">Evento</div>
+    <h2 class="screen-title">Gerar</h2>
+    <div class="slabel" style="margin-top:0">Evento</div>
     <div id="gerar-evento-sel"></div>
     <div class="slabel" style="margin-top:4px">Dados da nota</div>
     <label>Número da nota</label>
@@ -402,25 +408,26 @@ textarea{resize:vertical;min-height:68px}
     <label>Vencimento</label>
     <input type="date" id="venc-nota" />
     <div id="gerar-preview" style="margin-top:16px"></div>
-    <button class="btn btn-primary mt8" id="btn-gerar-pdf" onclick="gerarPDFUnificado()">📥 Gerar Nota de Débito (PDF)</button>
+    <button class="btn btn-primary mt8" id="btn-gerar-pdf" onclick="gerarPDFUnificado()"><svg class="icon" style="width:16px;height:16px"><use href="#i-download"/></svg> Gerar Nota de Débito (PDF)</button>
     <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:8px">Gera um único PDF com nota + comprovantes</p>
     <button class="btn mt8" id="btn-enviar-email" onclick="enviarEmail()" style="border-color:var(--border2)">
-      📧 Preparar e-mail para o financeiro
+      <svg class="icon" style="width:16px;height:16px"><use href="#i-mail"/></svg> Preparar e-mail para o financeiro
     </button>
     <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:6px">Abre seu e-mail já preenchido — só anexar o PDF</p>
-    <button class="btn btn-danger btn-ghost mt16" onclick="limparEvento()">🗑️ Limpar despesas do evento</button>
+    <button class="btn btn-danger btn-ghost mt16" onclick="limparEvento()"><svg class="icon" style="width:16px;height:16px"><use href="#i-trash"/></svg> Limpar despesas do evento</button>
   </div>
 
   <!-- CONFIG -->
   <div id="screen-config" class="screen">
-    <div class="slabel">Prestador (você)</div>
+    <h2 class="screen-title">Dados</h2>
+    <div class="slabel" style="margin-top:0">Prestador (você)</div>
     <div class="info-card" id="config-prestador-view">
       <div class="pf"><div class="fl">Razão Social</div><div class="fv" id="cfg-nome"></div></div>
       <div class="pf"><div class="fl">CNPJ</div><div class="fv" id="cfg-cnpj"></div></div>
       <div class="pf"><div class="fl">E-mail</div><div class="fv" id="cfg-email"></div></div>
       <div class="pf"><div class="fl">Telefone</div><div class="fv" id="cfg-tel"></div></div>
       <div class="pf"><div class="fl">Endereço</div><div class="fv" id="cfg-end"></div></div>
-      <button class="btn btn-sm mt8" onclick="abrirEditarPrestador()" style="width:auto">✏️ Editar dados</button>
+      <button class="btn btn-sm mt8" onclick="abrirEditarPrestador()" style="width:auto"><svg class="icon" style="width:13px;height:13px"><use href="#i-pencil"/></svg> Editar dados</button>
     </div>
     <div class="slabel">Dados bancários</div>
     <div class="info-card">
@@ -429,7 +436,7 @@ textarea{resize:vertical;min-height:68px}
       <div class="pf"><div class="fl">Conta Corrente (PJ)</div><div class="fv" id="cfg-conta"></div></div>
       <div class="pf"><div class="fl">Titular</div><div class="fv" id="cfg-titular"></div></div>
       <div class="pf"><div class="fl">CNPJ vinculado</div><div class="fv" id="cfg-cnpj-banco"></div></div>
-      <button class="btn btn-sm mt8" onclick="abrirEditarBanco()" style="width:auto">✏️ Editar</button>
+      <button class="btn btn-sm mt8" onclick="abrirEditarBanco()" style="width:auto"><svg class="icon" style="width:13px;height:13px"><use href="#i-pencil"/></svg> Editar</button>
     </div>
     <div class="slabel">Tomadores cadastrados</div>
     <div class="info-card" style="font-size:13px;line-height:2.2" id="cfg-tomadores-view">
@@ -439,12 +446,12 @@ textarea{resize:vertical;min-height:68px}
         <b>IGD / Black Friday</b> — CNPJ 10.332.345/0001-04<br>
         <b>FHT</b> — CNPJ 53.049.699/0001-40
       </div>
-      <button class="btn btn-sm mt8" onclick="abrirEditarTomadores()" style="width:auto">✏️ Editar</button>
+      <button class="btn btn-sm mt8" onclick="abrirEditarTomadores()" style="width:auto"><svg class="icon" style="width:13px;height:13px"><use href="#i-pencil"/></svg> Editar</button>
     </div>
     <div class="slabel">Envio</div>
     <div class="info-card">
       <div class="pf"><div class="fl">Financeiro</div><div class="fv" id="cfg-email-envio">financeiro@platmentorias.com.br</div></div>
-      <button class="btn btn-sm mt8" onclick="abrirEditarEnvio()" style="width:auto">✏️ Editar</button>
+      <button class="btn btn-sm mt8" onclick="abrirEditarEnvio()" style="width:auto"><svg class="icon" style="width:13px;height:13px"><use href="#i-pencil"/></svg> Editar</button>
     </div>
     <div class="alert a-warn mt16">
       ⚠️ Prints de tela do banco <b>não são aceitos</b>.<br><br>
@@ -453,9 +460,9 @@ textarea{resize:vertical;min-height:68px}
     <div class="slabel">Armazenamento</div>
     <div class="info-card" style="font-size:13px">
       <div id="storage-info">Calculando...</div>
-      <button class="btn btn-sm mt8" onclick="exportarBackup()">💾 Exportar backup</button>
-      <label style="margin-top:10px">Importar backup</label>
-      <input type="file" id="backup-input" accept=".json" onchange="importarBackup(event)" />
+      <button class="btn btn-sm mt8" onclick="exportarBackup()"><svg class="icon" style="width:14px;height:14px"><use href="#i-download"/></svg> Exportar backup</button>
+      <label class="btn btn-sm mt8" for="backup-input" style="cursor:pointer"><svg class="icon" style="width:14px;height:14px"><use href="#i-upload"/></svg> Importar backup</label>
+      <input type="file" id="backup-input" accept=".json" onchange="importarBackup(event)" style="display:none" />
     </div>
     <div class="slabel">Instalar app</div>
     <div class="info-card" style="font-size:13px">
@@ -2265,7 +2272,7 @@ function renderGerarPreview(){
   const barHtml=(label,icon,count,val,color)=>count===0?'':
     `<div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:13px">${icon} ${label} <span style="color:var(--text2);font-size:12px">(${count}x)</span></span>
+        <span style="font-size:13px;display:inline-flex;align-items:center;gap:5px"><svg class="icon" style="width:14px;height:14px"><use href="#${icon}"/></svg> ${label} <span style="color:var(--text2);font-size:12px">(${count}x)</span></span>
         <span style="font-size:14px;font-weight:600">${fv(val)}</span>
       </div>
       <div style="background:var(--bg3);border-radius:4px;height:6px">
@@ -2276,9 +2283,9 @@ function renderGerarPreview(){
   el.innerHTML=`
     <div class="alert a-ok" style="margin-bottom:12px">✅ <b>${desp.length}</b> despesa(s) prontas · Total: <b>${fv(total)}</b></div>
     <div class="card" style="padding:14px 16px">
-      ${barHtml('Transporte','🚗',transp.length,tvTotal,'var(--blue)')}
-      ${barHtml('Alimentação','🍽️',alim.length,avTotal,'var(--green)')}
-      ${barHtml('Outros','➕',outro.length,ovTotal,'var(--amber)')}
+      ${barHtml('Transporte','i-car',transp.length,tvTotal,'var(--blue)')}
+      ${barHtml('Alimentação','i-fork',alim.length,avTotal,'var(--green)')}
+      ${barHtml('Outros','i-plus',outro.length,ovTotal,'var(--amber)')}
       <div style="border-top:.5px solid var(--border);padding-top:10px;margin-top:2px;display:flex;justify-content:space-between">
         <span style="font-size:13px;color:var(--text2)">Total geral</span>
         <span style="font-size:18px;font-weight:700">${fv(total)}</span>
@@ -3071,12 +3078,8 @@ function editarDespesa(id){
   if(evAtivo&&evAtivo.inicio&&d.data){
     const diff=Math.round((new Date(d.data)-new Date(evAtivo.inicio))/(1000*60*60*24));
     const diaCalc=Math.max(1,diff+1);
-    const infoEl=document.getElementById('edit-dia-auto-info');
-    const infoTxt=document.getElementById('edit-dia-auto-txt');
-    if(infoEl&&infoTxt){
-      infoEl.style.display='block';
-      infoTxt.textContent='Dia '+diaCalc+' (baseado na data '+fd(d.data)+')';
-    }
+    // Essa caixa só repetia "Dia X" já mostrado na descrição gerada logo
+    // abaixo -- mesma redundância corrigida na tela de lançar.
     if(diaCalc<=5){ setEditDia(diaCalc); }
     else {
       for(let i=1;i<=5;i++){const btn=document.getElementById('edit-dia-btn-'+i);if(btn)btn.className='tipo-btn';}
@@ -3722,9 +3725,6 @@ initGoogle();
     </div>
 
     <label>Dia do evento</label>
-    <div id="edit-dia-auto-info" style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;margin-bottom:6px;display:none">
-      📅 Calculado pela data: <b id="edit-dia-auto-txt"></b>
-    </div>
     <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap">
       <button class="tipo-btn" id="edit-dia-btn-1" onclick="setEditDia(1)" style="padding:7px 4px;font-size:13px;flex:1;min-width:0">Dia 1</button>
       <button class="tipo-btn" id="edit-dia-btn-2" onclick="setEditDia(2)" style="padding:7px 4px;font-size:13px;flex:1;min-width:0">Dia 2</button>
