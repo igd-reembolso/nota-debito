@@ -45,6 +45,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 .screen{display:none;padding:16px;padding-bottom:40px}
 .screen.active{display:block}
+.screen-title{font-size:19px;font-weight:700;letter-spacing:-.2px;margin-bottom:16px}
 
 .slabel{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin:20px 0 8px}
 .slabel:first-child{margin-top:0}
@@ -129,6 +130,8 @@ textarea{resize:vertical;min-height:68px}
 .exp-item.flash{animation:nd-flash .7s ease-out}
 
 /* ── resumo no topo da lista de despesas ─────────────────────── */
+.event-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:var(--bg2);border-radius:20px;font-size:12.5px;color:var(--text2);max-width:100%}
+.event-chip b{color:var(--text);font-weight:600}
 .summary{background:var(--bg2);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
 .summary-top{display:flex;justify-content:space-between;align-items:baseline}
 .summary-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text2)}
@@ -303,14 +306,18 @@ textarea{resize:vertical;min-height:68px}
 
   <!-- EVENTOS -->
   <div id="screen-eventos" class="screen active">
-    <button class="btn btn-primary" onclick="openModal('modal-evento');limparModalEvento()"><svg class="icon" style="width:16px;height:16px"><use href="#i-plus"/></svg> Novo evento</button>
-    <div class="slabel" style="margin-top:20px">Eventos cadastrados</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px">
+      <h2 class="screen-title" style="margin-bottom:0">Eventos</h2>
+      <button class="btn btn-primary" onclick="openModal('modal-evento');limparModalEvento()" style="width:auto;padding:9px 16px 9px 12px;border-radius:20px;flex-shrink:0"><svg class="icon" style="width:15px;height:15px"><use href="#i-plus"/></svg> Novo</button>
+    </div>
+    <div class="slabel" style="margin-top:0">Eventos cadastrados</div>
     <div id="eventos-list"></div>
   </div>
 
   <!-- LANÇAR -->
   <div id="screen-lancar" class="screen">
-    <div class="slabel">Evento ativo</div>
+    <h2 class="screen-title">Nova despesa</h2>
+    <div class="slabel" style="margin-top:0">Evento ativo</div>
     <div id="evento-ativo-info"></div>
     <button class="btn btn-ghost mt8" onclick="go('eventos')" style="font-size:13px">🔄 Trocar evento</button>
 
@@ -374,6 +381,7 @@ textarea{resize:vertical;min-height:68px}
 
   <!-- DESPESAS -->
   <div id="screen-despesas" class="screen">
+    <h2 class="screen-title">Despesas</h2>
     <div id="total-area"></div>
     <div id="despesas-list"></div>
   </div>
@@ -1576,12 +1584,7 @@ function renderEventoAtivo(){
   }
   const ev=S.eventos.find(e=>e.id===S.eventoAtivo);
   if(!ev){el.innerHTML='<div class="alert a-warn">⚠️ Evento não encontrado.</div>';return}
-  const tom=TOMADORES[ev.tomador]||{};
-  el.innerHTML=`<div class="card">
-    <div style="font-size:15px;font-weight:600">${ev.nome}</div>
-    <div style="font-size:12px;color:var(--text2);margin-top:3px">${tom.nome||ev.tomador}</div>
-    <div style="font-size:12px;color:var(--text2)">${ev.cidade||''}${ev.cidade&&ev.inicio?' · ':''}${fd(ev.inicio)}${ev.fim&&ev.fim!==ev.inicio?' → '+fd(ev.fim):''}</div>
-  </div>`;
+  el.innerHTML=`<span class="event-chip"><b>${ev.nome}</b>${ev.cidade?' · '+ev.cidade:''}</span>`;
   if(ev.inicio){
     // Preenche com a data de início se não tiver data selecionada
     if(!document.getElementById('data').value){
@@ -2113,7 +2116,7 @@ function renderDespesas(){
   const desp=S.eventoAtivo?S.despesas.filter(d=>d.eventoId===S.eventoAtivo):S.despesas;
   const ev=S.eventoAtivo?S.eventos.find(e=>e.id===S.eventoAtivo):null;
   if(!desp.length){
-    ta.innerHTML=ev?`<div style="font-size:13px;color:var(--text2);margin-bottom:10px"><b style="color:var(--text)">${ev.nome}</b></div>`:'';
+    ta.innerHTML=ev?`<span class="event-chip" style="margin-bottom:10px"><b>${ev.nome}</b>${ev.cidade?' · '+ev.cidade:''}</span>`:'';
     el.innerHTML='<div class="empty"><span class="ei">🧾</span>Nenhuma despesa lançada ainda</div>';
     return;
   }
@@ -2123,7 +2126,7 @@ function renderDespesas(){
   const pctTransp=total?(totalTransp/total*100):0;
   const pctAlim=100-pctTransp;
   ta.innerHTML=`
-    ${ev?`<div style="font-size:14.5px;font-weight:600;margin-bottom:8px">${ev.nome}</div>`:''}
+    ${ev?`<span class="event-chip" style="margin-bottom:10px"><b>${ev.nome}</b>${ev.cidade?' · '+ev.cidade:''}</span>`:''}
     <div class="summary">
       <div class="summary-top">
         <span class="summary-label">Total do evento</span>
