@@ -129,6 +129,11 @@ textarea{resize:vertical;min-height:68px}
 .exp-actions button.tag-btn{width:auto;height:28px;padding:0 10px;gap:5px;font-size:12px}
 .exp-actions button:disabled{opacity:.25;cursor:default}
 .exp-actions .spacer{flex:1}
+.exp-actions .stepper{display:flex;flex-direction:column;width:28px;height:28px;border-radius:8px;border:.5px solid var(--border2);overflow:hidden;flex-shrink:0}
+.exp-actions .stepper button{width:28px;height:14px;border-radius:0;border:none;background:transparent;color:var(--text2);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.exp-actions .stepper button:first-child{border-bottom:.5px solid var(--border2)}
+.exp-actions .stepper button:disabled{opacity:.25;cursor:default}
+.exp-actions .stepper .icon{width:10px;height:10px}
 @keyframes nd-flash{0%{background:var(--bg3)}100%{background:transparent}}
 .exp-item.flash{animation:nd-flash .7s ease-out}
 
@@ -2173,8 +2178,10 @@ function renderDespesas(){
           <div class="spacer"></div>
           <button onclick="editarDespesa(${d.id})" title="Editar" aria-label="Editar"><svg class="icon"><use href="#i-pencil"/></svg></button>
           <button class="danger" onclick="delDespesa(${d.id})" title="Excluir" aria-label="Excluir"><svg class="icon"><use href="#i-trash"/></svg></button>
-          <button onclick="moverDespesa(${d.id},-1)" ${idx===0?'disabled':''} title="Mover para cima" aria-label="Mover para cima"><svg class="icon"><use href="#i-chevron"/></svg></button>
-          <button onclick="moverDespesa(${d.id},1)" ${idx===desp.length-1?'disabled':''} title="Mover para baixo" aria-label="Mover para baixo"><svg class="icon" style="transform:rotate(180deg)"><use href="#i-chevron"/></svg></button>
+          <div class="stepper">
+            <button onclick="moverDespesa(${d.id},-1)" ${idx===0?'disabled':''} title="Mover para cima" aria-label="Mover para cima"><svg class="icon"><use href="#i-chevron"/></svg></button>
+            <button onclick="moverDespesa(${d.id},1)" ${idx===desp.length-1?'disabled':''} title="Mover para baixo" aria-label="Mover para baixo"><svg class="icon" style="transform:rotate(180deg)"><use href="#i-chevron"/></svg></button>
+          </div>
         </div>
       </div>
     </div>`).join('');
