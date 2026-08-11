@@ -3072,26 +3072,15 @@ function editarDespesa(id){
     document.getElementById('edit-outro-tipo').value=label;
   }
 
-  // Dia — calcula pela data se tiver evento ativo
-  const dia=d.diaAtivo||1;
+  // Dia — calculado pela data quando há evento ativo (igual na tela de
+  // lançar); campo escondido, sem botões visíveis (não eram usados).
+  let diaFinal=d.diaAtivo||1;
   const evAtivo=S.eventos.find(e=>e.id===d.eventoId);
   if(evAtivo&&evAtivo.inicio&&d.data){
     const diff=Math.round((new Date(d.data)-new Date(evAtivo.inicio))/(1000*60*60*24));
-    const diaCalc=Math.max(1,diff+1);
-    // Essa caixa só repetia "Dia X" já mostrado na descrição gerada logo
-    // abaixo -- mesma redundância corrigida na tela de lançar.
-    if(diaCalc<=5){ setEditDia(diaCalc); }
-    else {
-      for(let i=1;i<=5;i++){const btn=document.getElementById('edit-dia-btn-'+i);if(btn)btn.className='tipo-btn';}
-      document.getElementById('edit-dia').value=diaCalc;
-    }
-  } else {
-    if(dia<=5){ setEditDia(dia); }
-    else {
-      for(let i=1;i<=5;i++){const btn=document.getElementById('edit-dia-btn-'+i);if(btn)btn.className='tipo-btn';}
-      document.getElementById('edit-dia').value=dia;
-    }
+    diaFinal=Math.max(1,diff+1);
   }
+  document.getElementById('edit-dia').dataset.val=diaFinal;
 
   // Data
   document.getElementById('edit-data').value=d.data||'';
@@ -3131,39 +3120,25 @@ function setEditTipo(t, skipDesc){
   if(!skipDesc) atualizarEditDesc();
 }
 
-function setEditDia(d){
-  for(let i=1;i<=5;i++){
-    const btn=document.getElementById('edit-dia-btn-'+i);
-    if(btn) btn.className='tipo-btn'+(i===d?' sel':'');
-  }
-  const el=document.getElementById('edit-dia');
-  if(el) el.value='';
-  // Guardar dia ativo via campo hidden
-  document.getElementById('edit-dia').dataset.val=d;
-  atualizarEditDesc();
-}
-
-function editDiaInput(v){
-  const n=parseInt(v);
-  if(!isNaN(n)&&n>=1){
-    for(let i=1;i<=5;i++){
-      const btn=document.getElementById('edit-dia-btn-'+i);
-      if(btn) btn.className='tipo-btn';
-    }
-    atualizarEditDesc();
-  }
-}
-
-function ajustarEditDia(delta){
-  const el=document.getElementById('edit-dia');
-  el.value=Math.max(1,parseInt(el.value||1)+delta);
-  atualizarEditDesc();
-}
-
 function getEditTipoLabel(){
   if(editTipo==='transporte')return'Transporte';
   if(editTipo==='alimentacao')return'Alimentação';
   return(document.getElementById('edit-outro-tipo').value||'').trim()||'Outro';
+}
+
+// Recalcula o dia do evento quando a data muda dentro do modal de editar —
+// mesma lógica de calcularDiaAuto() da tela de lançar, sem botão manual.
+function calcularDiaAutoEdit(){
+  const dataSel=document.getElementById('edit-data')?.value;
+  if(!dataSel)return;
+  const id=parseInt(document.getElementById('edit-id').value);
+  const d=S.despesas.find(x=>x.id===id);
+  const ev=d?S.eventos.find(e=>e.id===d.eventoId):null;
+  if(ev&&ev.inicio){
+    const diff=Math.round((new Date(dataSel)-new Date(ev.inicio))/(1000*60*60*24));
+    document.getElementById('edit-dia').dataset.val=Math.max(1,diff+1);
+  }
+  atualizarEditDesc();
 }
 
 function atualizarEditDesc(){
@@ -3724,18 +3699,9 @@ initGoogle();
       <input type="text" id="edit-outro-tipo" placeholder="Ex: Farmácia..." oninput="atualizarEditDesc()" />
     </div>
 
-    <label>Dia do evento</label>
-    <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap">
-      <button class="tipo-btn" id="edit-dia-btn-1" onclick="setEditDia(1)" style="padding:7px 4px;font-size:13px;flex:1;min-width:0">Dia 1</button>
-      <button class="tipo-btn" id="edit-dia-btn-2" onclick="setEditDia(2)" style="padding:7px 4px;font-size:13px;flex:1;min-width:0">Dia 2</button>
-      <button class="tipo-btn" id="edit-dia-btn-3" onclick="setEditDia(3)" style="padding:7px 4px;font-size:13px;flex:1;min-width:0">Dia 3</button>
-      <button class="tipo-btn" id="edit-dia-btn-4" onclick="setEditDia(4)" style="padding:7px 4px;font-size:13px;flex:1;min-width:0">Dia 4</button>
-      <button class="tipo-btn" id="edit-dia-btn-5" onclick="setEditDia(5)" style="padding:7px 4px;font-size:13px;flex:1;min-width:0">Dia 5</button>
-      <input type="number" id="edit-dia" min="1" max="99" inputmode="numeric"
-        placeholder="6+"
-        style="text-align:center;font-size:13px;font-weight:500;flex:1;min-width:0;padding:7px 4px;border:.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);color:var(--text)"
-        oninput="editDiaInput(this.value)" />
-    </div>
+    <!-- Dia calculado automaticamente pela data, igual na tela de lançar --
+         sem botões visíveis, só o campo escondido que guarda o valor. -->
+    <input type="number" id="edit-dia" style="display:none" />
 
     <div class="card" style="margin-top:10px;margin-bottom:4px">
       <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Descrição gerada</div>
@@ -3744,7 +3710,7 @@ initGoogle();
 
     <div style="position:relative;margin-top:12px">
       <svg class="icon" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text2);pointer-events:none"><use href="#i-cal"/></svg>
-      <input type="date" id="edit-data" style="text-align:center;padding-left:40px;padding-right:40px" />
+      <input type="date" id="edit-data" onchange="calcularDiaAutoEdit()" style="text-align:center;padding-left:40px;padding-right:40px" />
     </div>
 
     <input type="text" id="edit-valor" inputmode="numeric" oninput="mascaraValor(this)"
