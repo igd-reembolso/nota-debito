@@ -38,12 +38,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .hdr h1{font-size:16px;font-weight:700;letter-spacing:-.3px}
 .hdr p{font-size:10.5px;color:var(--text3);margin-top:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}
 
-.nav{display:flex;border-bottom:.5px solid var(--border);background:var(--bg);position:sticky;top:50px;z-index:20}
-.nav button{flex:1;padding:9px 2px 7px;font-size:10px;background:none;border:none;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;transition:all .15s}
-.nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+/* Barra de abas fica no rodapé (padrão dos apps mobile) em vez de colada no
+   cabeçalho — duas barras fixas grudadas no topo pesavam visualmente e
+   competiam por atenção logo de cara. */
+.nav{display:flex;border-top:.5px solid var(--border);background:var(--bg);position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;z-index:20;padding-bottom:env(safe-area-inset-bottom,0)}
+.nav button{flex:1;padding:9px 2px 7px;font-size:10px;background:none;border:none;color:var(--text3);cursor:pointer;font-family:inherit;transition:color .15s}
+.nav button.active{color:var(--primary);font-weight:600}
 .nav button .ni{font-size:19px;display:block;margin:0 auto 2px}
 
-.screen{display:none;padding:16px;padding-bottom:40px}
+.screen{display:none;padding:16px;padding-bottom:96px}
 .screen.active{display:block}
 .screen-title{font-size:19px;font-weight:700;letter-spacing:-.2px;margin-bottom:16px}
 
@@ -317,9 +320,7 @@ textarea{resize:vertical;min-height:68px}
   <!-- LANÇAR -->
   <div id="screen-lancar" class="screen">
     <h2 class="screen-title">Nova despesa</h2>
-    <div class="slabel" style="margin-top:0">Evento ativo</div>
     <div id="evento-ativo-info"></div>
-    <button class="btn btn-ghost mt8" onclick="go('eventos')" style="font-size:13px">🔄 Trocar evento</button>
 
     <div class="slabel">Tipo de despesa</div>
     <div class="tipo-grid" style="grid-template-columns:1fr 1fr 1fr">
@@ -1584,7 +1585,7 @@ function renderEventoAtivo(){
   }
   const ev=S.eventos.find(e=>e.id===S.eventoAtivo);
   if(!ev){el.innerHTML='<div class="alert a-warn">⚠️ Evento não encontrado.</div>';return}
-  el.innerHTML=`<span class="event-chip"><b>${ev.nome}</b>${ev.cidade?' · '+ev.cidade:''}</span>`;
+  el.innerHTML=`<span class="event-chip" style="cursor:pointer" onclick="go('eventos')" title="Toque para trocar de evento"><b>${ev.nome}</b>${ev.cidade?' · '+ev.cidade:''} <svg class="icon" style="width:11px;height:11px;display:inline;vertical-align:-1px;opacity:.6;transform:rotate(180deg)"><use href="#i-chevron"/></svg></span>`;
   if(ev.inicio){
     // Preenche com a data de início se não tiver data selecionada
     if(!document.getElementById('data').value){
@@ -2148,8 +2149,15 @@ function renderDespesas(){
         <div class="exp-row">
           <div style="flex:1;min-width:0">
             <div class="exp-top"><svg class="icon"><use href="#${d.tipo==='transporte'?'i-car':'i-fork'}"/></svg><span class="exp-desc">${d.desc.split('\n')[0]}</span></div>
-            <div class="exp-meta">${d.desc.split('\n')[1]||''}</div>
-            <div class="exp-meta">${fd(d.data)}${(()=>{const ev=S.eventos.find(e=>e.id===d.eventoId);return ev&&ev.cidade?' · '+ev.cidade:'';})()}</div>
+            <div class="exp-meta">${(()=>{
+              // Sem evento ativo (lista mistura vários eventos), mostra o nome do
+              // evento no cartão — com evento ativo, isso já está no chip acima e
+              // repetir só deixava o cartão mais poluído.
+              const evCard=S.eventos.find(e=>e.id===d.eventoId);
+              const cidadeStr=evCard&&evCard.cidade?' · '+evCard.cidade:'';
+              const prefixo=S.eventoAtivo?'':(evCard?evCard.nome+' · ':'');
+              return `${prefixo}Dia ${d.diaAtivo||1} · ${fd(d.data)}${cidadeStr}`;
+            })()}</div>
             <div class="exp-tags">
               ${d.nfLink?`<span class="tag nf" style="cursor:pointer" data-nflink="${escAttr(d.nfLink)}" onclick="window.open(this.dataset.nflink,'_blank')"><svg class="icon"><use href="#i-link"/></svg>NF-e</span>`:''}
               ${d.attachs&&d.attachs.length?`<span class="tag" style="cursor:pointer" onclick="previewDespesaAttach(${d.id},0)"><svg class="icon"><use href="#i-receipt"/></svg>${d.attachs.length}</span>`:''}
