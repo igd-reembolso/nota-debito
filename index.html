@@ -34,11 +34,11 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:16px;overscroll-behavior:none}
 .app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
 
-.hdr{padding:14px 16px 10px;border-bottom:.5px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:20}
-.hdr h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
-.hdr p{font-size:11px;color:var(--text2);margin-top:1px}
+.hdr{padding:10px 16px;border-bottom:.5px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:20}
+.hdr h1{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.hdr p{font-size:10.5px;color:var(--text3);margin-top:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}
 
-.nav{display:flex;border-bottom:.5px solid var(--border);background:var(--bg);position:sticky;top:57px;z-index:20}
+.nav{display:flex;border-bottom:.5px solid var(--border);background:var(--bg);position:sticky;top:50px;z-index:20}
 .nav button{flex:1;padding:9px 2px 7px;font-size:10px;background:none;border:none;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;transition:all .15s}
 .nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
 .nav button .ni{font-size:19px;display:block;margin:0 auto 2px}
@@ -286,12 +286,12 @@ textarea{resize:vertical;min-height:68px}
         <p id="hdr-user">Carregando...</p>
       </div>
       <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn-help" onclick="alternarTema()" id="btn-tema" title="Alternar tema">🌙</button>
-          <button class="btn-help" onclick="abrirAjuda()" title="Ajuda">?</button>
-          <div id="sync-status" style="font-size:11px;color:var(--text2)"></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div id="sync-status" style="font-size:10.5px;color:var(--text3)"></div>
+          <button class="btn-help" onclick="alternarTema()" id="btn-tema" title="Alternar tema" style="width:26px;height:26px;font-size:12px">🌙</button>
+          <button class="btn-help" onclick="abrirAjuda()" title="Ajuda" style="width:26px;height:26px;font-size:12px">?</button>
         </div>
-        <button onclick="fazerLogout()" style="background:none;border:none;font-size:11px;color:var(--text2);cursor:pointer">Sair</button>
+        <button onclick="fazerLogout()" style="background:none;border:none;font-size:10.5px;color:var(--text3);cursor:pointer;padding:0">Sair</button>
       </div>
     </div>
   </div>
