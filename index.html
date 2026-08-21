@@ -359,6 +359,7 @@ textarea{resize:vertical;min-height:68px}
       oninput="mascaraValor(this)" style="margin-top:12px;font-size:28px;font-weight:700;text-align:center;padding:14px;font-family:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Consolas,monospace;font-variant-numeric:tabular-nums" />
 
     <div class="slabel" style="margin:16px 0 8px">Nota fiscal / comprovante</div>
+    <div class="alert a-warn" style="margin-bottom:8px">⚠️ Guarde o cupom fiscal em papel até o reembolso cair na conta. A foto é um apoio — só jogue o original fora depois de receber.</div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
       <div class="drop" onclick="document.getElementById('file-camera').click()" style="margin-top:0">
@@ -418,6 +419,7 @@ textarea{resize:vertical;min-height:68px}
       <svg class="icon" style="width:16px;height:16px"><use href="#i-mail"/></svg> Preparar e-mail para o financeiro
     </button>
     <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:6px">Abre seu e-mail já preenchido — só anexar o PDF</p>
+    <div class="alert a-warn mt16">⚠️ Não jogue os cupons fiscais originais fora agora — guarde até o reembolso ser efetivamente pago, caso seja preciso conferir algo.</div>
     <button class="btn btn-danger btn-ghost mt16" onclick="limparEvento()"><svg class="icon" style="width:16px;height:16px"><use href="#i-trash"/></svg> Limpar despesas do evento</button>
   </div>
 
@@ -517,6 +519,11 @@ let S={eventos:[],despesas:[],notaCounter:0,eventoAtivo:''};
 let tipo='transporte';
 let nfLink='';
 let attachs=[];
+// Contador de comprovantes ainda em processamento (correção EXIF/FileReader são
+// assíncronos). Enquanto > 0, não deixamos salvar/trocar de despesa — senão o
+// comprovante pode terminar de processar DEPOIS da troca e ser anexado na
+// despesa errada (foi exatamente o que causou comprovantes trocados no passado).
+let comprovantePendente=0;
 let qrStream=null,qrInterval=null;
 let gerarEventoId='';
 let lastDespesaId=0;
@@ -2169,7 +2176,37 @@ function avancarPreview(delta){
   mostrarPreviewComprovante(previewList,novo);
 }
 
+// Salva o comprovante aberto no preview também no aparelho (galeria de fotos ou
+// pasta de arquivos), como backup independente do Drive. No Android costuma
+// salvar direto sem diálogo; no iPhone abre a folha de compartilhar nativa —
+// a pessoa toca em "Salvar imagem" (o iOS não deixa um site escrever na galeria
+// sem essa confirmação).
+async function salvarComprovanteNoDispositivo(){
+  const a=previewList&&previewList[previewIndex];
+  if(!a||!a.data){mostrarToast('⚠️ Comprovante ainda não carregado','err');return}
+  try{
+    const blob=await (await fetch(a.data)).blob();
+    const filename=a.name||(a.type.includes('pdf')?'comprovante.pdf':'comprovante.jpg');
+    const file=new File([blob],filename,{type:blob.type});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file]});
+      return;
+    }
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url;link.download=filename;
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+    mostrarToast('💾 Salvo no aparelho','ok');
+  }catch(e){
+    if(e.name==='AbortError')return; // pessoa cancelou a folha de compartilhar
+    console.warn('Erro ao salvar comprovante no aparelho:',e);
+    mostrarToast('⚠️ Não consegui salvar no aparelho','err');
+  }
+}
+
 function addDespesa(){
+  if(comprovantePendente>0){showAddMsg('⏳ Aguarde o comprovante terminar de processar e tente de novo.','err');return}
   if(!S.eventoAtivo){showAddMsg('⚠️ Selecione um evento primeiro.','err');return}
   // Validar "outro"
   if(tipo==='outro'){
@@ -2921,13 +2958,16 @@ ${comprovantesHTML}
 
 function attachFile(e){
   const f=e.target.files[0];if(!f)return;
+  comprovantePendente++;
   // PDFs não precisam de correção de orientação
   if(f.type.includes('pdf')){
     const reader=new FileReader();
     reader.onload=ev=>{
       attachs.push({name:f.name,type:f.type,data:ev.target.result});
       renderAttachs();
+      comprovantePendente--;
     };
+    reader.onerror=()=>{comprovantePendente--;};
     reader.readAsDataURL(f);
     e.target.value='';
     return;
@@ -2938,13 +2978,17 @@ function attachFile(e){
     renderAttachs();
   }).catch(()=>{
     // Fallback: salva sem correção se algo falhar
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      attachs.push({name:f.name,type:f.type,data:ev.target.result});
-      renderAttachs();
-    };
-    reader.readAsDataURL(f);
-  });
+    return new Promise(resolve=>{
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        attachs.push({name:f.name,type:f.type,data:ev.target.result});
+        renderAttachs();
+        resolve();
+      };
+      reader.onerror=resolve;
+      reader.readAsDataURL(f);
+    });
+  }).finally(()=>{comprovantePendente--;});
   e.target.value='';
 }
 
@@ -3171,6 +3215,7 @@ let editAttachs=[];
 let editNFLink='';
 
 function editarDespesa(id){
+  if(comprovantePendente>0){alert('⏳ Aguarde o comprovante da despesa atual terminar de carregar antes de editar outra.');return}
   const d=S.despesas.find(x=>x.id===id);
   if(!d)return;
   document.getElementById('edit-id').value=id;
@@ -3283,11 +3328,14 @@ function clearEditNF(){
 
 function editAttachFile(e){
   const f=e.target.files[0];if(!f)return;
+  comprovantePendente++;
   const reader=new FileReader();
   reader.onload=ev=>{
     editAttachs.push({name:f.name,type:f.type,data:ev.target.result});
     renderEditAttachs();
+    comprovantePendente--;
   };
+  reader.onerror=()=>{comprovantePendente--;};
   reader.readAsDataURL(f);
   e.target.value='';
 }
@@ -3315,6 +3363,7 @@ function rmEditAttach(i){
 }
 
 function salvarEdicao(){
+  if(comprovantePendente>0){alert('⏳ Aguarde o comprovante terminar de carregar antes de salvar.');return}
   const id=parseInt(document.getElementById('edit-id').value);
   const idx=S.despesas.findIndex(x=>x.id===id);
   if(idx===-1)return;
@@ -3744,6 +3793,7 @@ initGoogle();
     <button class="modal-close" onclick="closeModal('modal-finalizar')">✕</button>
     <h2>Finalizar evento</h2>
     <p id="finalizar-info" style="font-size:14px;color:var(--text);margin-bottom:20px;line-height:1.5"></p>
+    <div class="alert a-warn" style="margin-bottom:16px">⚠️ Só jogue os cupons fiscais originais fora depois que o reembolso deste evento for pago.</div>
 
     <button class="btn btn-primary" onclick="arquivarEventoConfirm()"><svg class="icon" style="width:16px;height:16px"><use href="#i-archive"/></svg> Arquivar</button>
     <p style="font-size:12px;color:var(--text2);text-align:center;margin:6px 0 20px">Some da lista principal, mas despesas e comprovantes continuam salvos — dá pra desarquivar depois.</p>
@@ -3895,6 +3945,7 @@ initGoogle();
     <button class="modal-close" onclick="closeModal('modal-preview')">✕</button>
     <h2 id="preview-title" style="font-size:14px;word-break:break-all"></h2>
     <div id="preview-body"></div>
+    <button class="btn btn-sm mt8" onclick="salvarComprovanteNoDispositivo()">💾 Salvar no aparelho (galeria/arquivos)</button>
     <div id="preview-nav" style="display:none;align-items:center;justify-content:center;gap:16px;margin-top:12px">
       <button class="btn btn-sm" onclick="avancarPreview(-1)">‹ Anterior</button>
       <span id="preview-counter" style="font-size:13px;color:var(--text2)"></span>
