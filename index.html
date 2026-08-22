@@ -371,7 +371,7 @@ textarea{resize:vertical;min-height:68px}
         <p>Arquivo</p>
       </div>
     </div>
-    <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none" onchange="attachFile(event)" />
+    <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none" onchange="attachFile(event,true)" />
     <input type="file" id="file-input" accept="image/*,application/pdf" style="display:none" onchange="attachFile(event)" />
     <div id="attach-list"></div>
 
@@ -2956,7 +2956,7 @@ ${comprovantesHTML}
 
 // ─── CROP ─────────────────────────────────────────────────────
 
-function attachFile(e){
+function attachFile(e,daCamera){
   const f=e.target.files[0];if(!f)return;
   comprovantePendente++;
   // PDFs não precisam de correção de orientação
@@ -2976,6 +2976,7 @@ function attachFile(e){
   corrigirOrientacaoImagem(f).then(dataUrl=>{
     attachs.push({name:f.name,type:'image/jpeg',data:dataUrl});
     renderAttachs();
+    if(daCamera) salvarComprovanteAutomatico(dataUrl,f.name);
   }).catch(()=>{
     // Fallback: salva sem correção se algo falhar
     return new Promise(resolve=>{
@@ -2983,6 +2984,7 @@ function attachFile(e){
       reader.onload=ev=>{
         attachs.push({name:f.name,type:f.type,data:ev.target.result});
         renderAttachs();
+        if(daCamera) salvarComprovanteAutomatico(ev.target.result,f.name);
         resolve();
       };
       reader.onerror=resolve;
@@ -2990,6 +2992,25 @@ function attachFile(e){
     });
   }).finally(()=>{comprovantePendente--;});
   e.target.value='';
+}
+
+// Salva a foto tirada pela câmera automaticamente no aparelho assim que ela é
+// anexada — sem abrir nenhuma tela nem pedir confirmação. É uma cópia de
+// segurança independente do Drive: no Android vai pra pasta Download (que os
+// apps de Galeria/Fotos costumam indexar); no iPhone vai pra pasta Downloads
+// do app Arquivos (o iOS não deixa um site gravar direto no álbum de Fotos
+// sem interação manual — não tem como contornar isso a partir do navegador).
+async function salvarComprovanteAutomatico(dataUrl,filename){
+  try{
+    const blob=await (await fetch(dataUrl)).blob();
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url;link.download=filename||'comprovante.jpg';
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+  }catch(e){
+    console.warn('Não consegui salvar a foto automaticamente no aparelho:',e);
+  }
 }
 
 // Lê o EXIF da imagem, gira corretamente e devolve um novo dataURL já correto
@@ -3326,13 +3347,14 @@ function clearEditNF(){
   document.getElementById('edit-nf-manual').value='';
 }
 
-function editAttachFile(e){
+function editAttachFile(e,daCamera){
   const f=e.target.files[0];if(!f)return;
   comprovantePendente++;
   const reader=new FileReader();
   reader.onload=ev=>{
     editAttachs.push({name:f.name,type:f.type,data:ev.target.result});
     renderEditAttachs();
+    if(daCamera) salvarComprovanteAutomatico(ev.target.result,f.name);
     comprovantePendente--;
   };
   reader.onerror=()=>{comprovantePendente--;};
@@ -3908,7 +3930,7 @@ initGoogle();
         <div class="di"><svg class="icon"><use href="#i-file"/></svg></div><p>Arquivo</p>
       </div>
     </div>
-    <input type="file" id="edit-file-camera" accept="image/*" capture="environment" style="display:none" onchange="editAttachFile(event)" />
+    <input type="file" id="edit-file-camera" accept="image/*" capture="environment" style="display:none" onchange="editAttachFile(event,true)" />
     <input type="file" id="edit-file-input" accept="image/*,application/pdf" style="display:none" onchange="editAttachFile(event)" />
     <div id="edit-attach-list"></div>
 
